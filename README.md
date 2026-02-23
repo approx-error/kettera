@@ -2,16 +2,16 @@
 
 Kettera (from the finnish word ketterä, meaning agile or nimble and from 'ket', the name commonly used for quantum state vectors) is 
 a numerical solver for the time-dependent Schrödinger equation (TDSE) written in modern Fortran. It also comes equipped with
-python scripts for generating plots and animations based on the data produced by the solver. Kettera is intented to be used on
-GNU/Linux systems and no guarantees for functionality are provided for users on other operating systems.
+python scripts for generating plots and animations based on the data produced by the solver. **Kettera is intented to be used on
+GNU/Linux systems and no guarantees for functionality are provided for users on other operating systems.**
 
 ## Features
 
 Kettera can handle multiple different initial conditions and potentials to simulate many different quantum systems.
-Initial conditons can also be read in from an external file. The user can also choose which numerical method is used
-to solve the TDSE. Kettera implements the Crank - Nicolson method as well as the split-step Fourier method. The python
-scripts that come equipped with Kettera can be used to plot certain physical quantities as a function of time and for
-creating animations that showcase the dynamics 
+Initial conditons can also be read in from an external file. Kettera implements the Crank - Nicolson method as well
+as the split-step Fourier method for solving the TDSE. Kettera also comes equipped with two python scripts 'ketplot'
+and 'ketanim' which can be used to plot physical quantities as a function of time and for creating animations
+that showcase the dynamics of the simulated system.
 
 ### Initial conditions
 
@@ -23,13 +23,14 @@ The initial state of the system can be provided in two ways:
 
 The user can decide what kind of environment the wavefunction is in by providing the parameters for a potential function.
 The user can control the type, offset and strength of the potential function or choose to set the potential to zero
-to simulate a free particle
+to simulate a free particle.
 
 ### Visualization
 
-After a simulation is done, the user can plot many physical quantities describing the system (eg. total energy, wavefunction normalization, etc.)
-as a function of time using the python script 'ketplot.py'. The user can also generate high quality animations of the simulation using the
-python script 'ketanim.py'. They can choose which quantities to animate and a gif of the dynamics will be produced
+After a simulation is done, some physical quantities describing the system (eg. total energy, wavefunction norm squared, etc.)
+can be plotted as a function of time using the python script 'ketplot'. High quality animations of the simulation can also be
+generated using the python script 'ketanim'. Ketanim supports plotting single frames and animating the whole simulation as
+a .gif or .mov file.
 
 ## External Dependencies
 
@@ -38,19 +39,27 @@ Kettera uses the [FFTW](https://www.fftw.org/) library to calculate Fourier tran
 
 ## Installation
 
-NOTE: This section assumes you have configured the external dependencies listed in the previous section to work on your system
+**NOTE**: This section assumes you have configured the external dependencies listed in the previous section to work on your system.
+
+TBD
 
 ## Usage
 
 To invoke Kettera, simply type `kettera` into a terminal. This should produce some simple usage information about kettera.
 Providing the option `--help` will provide more detailed usafe information about Kettera and providing the option `--version`
-will output Kettera's current version
+will output Kettera's current version.
 
 ### Running simulations
 
+TBD
+
 ### Using external input files
 
+TBD
+
 ### Using the visualization tools
+
+TBS
 
 ## License
 
