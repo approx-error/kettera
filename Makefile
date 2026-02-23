@@ -1,4 +1,3 @@
- # TODO: Maybe make it so that the crank-nicolson solver and split operator method solver are made into separate executables 
  # TODO: Figure out wheter the common_flags only need to be given at the compilation step
 src_dir := src
 obj_dir := obj
@@ -42,7 +41,7 @@ $(mod_dir):
 	mkdir -p $(mod_dir)
 
 # The executable is the target and the object files are the prerequisites
-# If the executable doesn't exist, this block will be run
+# If the executable doesn't exist, this block will be executed
 $(exe_path): $(obj_path) | $(build_dir)
 	@echo Linking object files
 	$(compiler) $(common_flags) $^ -o $@ $(libraries)
@@ -56,19 +55,15 @@ $(obj_dir):
 	mkdir -p $(obj_dir)
 
 # The object files are the target and the source files are the prerequisites
-# If the object files don't exist, this block will be run 
+# If the object files don't exist, this block will be executed
 $(obj_dir)/%.o: $(src_dir)/%.f90
 	@echo Compiling source files
 	$(compiler) $(common_flags) $(compilation_flags) -c $< -o $@
 
-
-
-
-
 # Shorthand commands to delete the object files, modules and the final executable
 .PHONY: clean deepclean
 clean:
-	-rm -f $(wildcard $(obj_dir)/*.o) $(wildcard $(mod_dir)/*.mod) $(build_path)
+	-rm -f $(wildcard $(obj_dir)/*.o) $(wildcard $(mod_dir)/*.mod) $(exe_path)
 
 deepclean:
 	-rm -rf $(obj_dir) $(mod_dir) $(build_dir)
