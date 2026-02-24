@@ -17,7 +17,7 @@ module sim_parameters
   ! Module contents: Parameters used in the simulations and derived types used for storing
   ! the parameters and arrays of data
   use kinds
-  use io_parameters
+  use io_parameters, only: MAX_STR_LEN
 
   implicit none
 
@@ -145,11 +145,12 @@ module sim_parameters
 
   ! Numerical parameters
   real(r64), parameter, public :: PI_CONST = 4.0_r64 * atan2(1.0_r64, 1.0_r64)
+  real(r64), parameter, public :: HBAR_CONST = 1.0545718176461565e-34_r64 ! Reduced Planck constant h-bar
   complex(r64), parameter, public :: IMAG_UNIT = (0.0_r64, 1.0_r64) ! imaginary unit i 
   real(r64), parameter, public :: EPS = 1e-5_r64 ! Used to check if a real variable is close to zero
 
   ! Limits for parameters
-  real(r64), parameter, public :: DELTA_X_MAX = 0.5_r64
+  real(r64), parameter, public :: DELTA_X_MAX = 1.0_r64
   !TODO: figure out a good DELTA_X_MAX: real(r64), parameter, public :: DELTA_X_MAX = 0.02_r64
   real(r64), parameter, public :: X_BOUND_MIN = 0.1_r64
   real(r64), parameter, public :: MASS_MIN = 0.001_r64

@@ -57,10 +57,9 @@ module calculate
       real(r64) :: norm_squared
       complex(r64) :: test ! TODO: remove this later if confirmed that norm_squared has zero complex component
 
-
       test = dot_product(wavefunction, wavefunction)
       if (abs(aimag(test)) >= EPS) then
-        print '(A,F18.15)', 'normalize: INFO: norm_squared has nonzero imaginary component: ', aimag(test)
+        print '(A,F18.15)', 'normalize: INFO: norm squared has nonzero imaginary component: ', aimag(test)
       endif 
       norm_squared = real(test)
       wavefunction = wavefunction / sqrt(norm_squared)
@@ -153,6 +152,8 @@ module calculate
       ! which correspond to the subdiagonal, main diagonal and supradiagonal respectively.
       ! The vector y is given as an array called vec. This implementations keeps the
       ! inputs the same as they will be needed every time this function is called
+      ! TODO: Check to see if this can be optimized since every term on the sub- and supradiagonals
+      ! is identical
       implicit none
       
       type(SimulationParams), intent(in) :: params
@@ -160,7 +161,6 @@ module calculate
       complex(r64) :: solution(params%point_count) 
 
       complex(r64) :: sup_new(params%point_count)
-      !complex(r64) :: sup_new(params%point_count-1)
       complex(r64) :: vec_new(params%point_count)
       complex(r64) :: numerator, denominator
      
@@ -191,22 +191,6 @@ module calculate
       do i = N-1, 1, -1
         solution(i) = vec_new(i) - sup_new(i)*solution(i+1)
       end do
-      ! Solving the system
-      !sup_new(1) = sup(1) / main(1)
-      !do i = 2, N-1
-      !  sup_new(i) = sup(i) / (main(i) - sub(i)*sup_new(i-1))
-      !end do
-      !
-      !vec_new(1) = vec(1) / main(1)
-      !do i = 2, N
-      !  vec_new(i) = (vec(i) - sub(i)*vec_new(i-1)) / (main(i) - sub(i)*sup_new(i-1))
-      !end do
-      !
-      ! Backsubstitution to get the final solution
-      !solution(N) = vec(1) / main(N)
-      !do i = N-1, 1, -1
-      !  solution(i) = vec_new(i) - sup_new(i)*solution(i+1)
-      !end do
        
       return
     end function solve_tridiagonal_system

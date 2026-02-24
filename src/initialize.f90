@@ -339,14 +339,16 @@ module initialize
 
       hamiltonian = 0.0_r64
 
-      do i = 1, N-1
-        hamiltonian(i+1,i) = -kinetic
+      do i = 2, N-1
+        hamiltonian(i,i-1) = -kinetic
         hamiltonian(i,i+1) = -kinetic
         hamiltonian(i,i) = 2.0_r64 * kinetic + potential(i)
       end do
 
       ! The bounds are determined separately
       if (unitb) then
+        !hamiltonian(1,1) = 0.0_r64
+        !hamiltonian(N,N) = 0.0_r64
         hamiltonian(1,1) = 1.0_r64
         hamiltonian(N,N) = 1.0_r64
       else
@@ -410,6 +412,16 @@ module initialize
         cn_operator = 0
         exit_code = DERIVED_PARAMETER_ERROR
         return
+      end if
+
+      if (N <= 12) then
+        print '(A)', 'init_cn_evolution_operator: DEBUG: cn_operator:'
+        do j = 1, N
+          do i = 1, N
+            write(6, fmt='(F8.5,SP,F8.5,"*i",2X)', advance='no') cn_operator(j,i)
+          end do
+          print *
+        end do
       end if
 
       exit_code = SUCCESS

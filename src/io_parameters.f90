@@ -28,6 +28,7 @@ module io_parameters
   ! ----- String parameters -----
 
   ! Simple format strings
+  character(*), parameter, public :: SINGLE_DIGIT_DOUBLE_FMT = 'F17.15'
   character(*), parameter, public :: SINGLE_FMT = 'ES13.6E2'
   character(*), parameter, public :: DOUBLE_FMT = 'ES23.15E3'
   character(*), parameter, public :: EXTENDED_FMT = 'ES27.18E4'

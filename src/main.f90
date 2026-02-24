@@ -41,15 +41,15 @@ program main
   SimParams%log_file = 'ket.out'
 
   SimParams%iter_method = Method%CRANK_NICOLSON
-  SimParams%imag_time = .false.
+  SimParams%imag_time = .false.!.true.!.false.
   SimParams%unit_bounds = .true. 
 
-  SimParams%step_count = 1000_i32
+  SimParams%step_count = 20000_i32!10000_i32!10000_i32
   SimParams%write_interval = 100_i32
   SimParams%delta_t = 1e-3_r64
 
-  SimParams%point_count = 512_i32
-  SimParams%x_max = 5.0_r64
+  SimParams%point_count = 1024_i32!512_i32
+  SimParams%x_max = 10.0_r64
 
   SimParams%wave_type = WaveType%GAUSSIAN
   SimParams%mass = 1.0_r64
