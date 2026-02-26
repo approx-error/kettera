@@ -38,11 +38,19 @@ module sim_parameters
   !      definition. 
 
   type IterationMethod
+    integer(label) :: INVALID = -1_label
     integer(label) :: CRANK_NICOLSON = 0_label
     integer(label) :: SPLIT_STEP = 1_label
   end type IterationMethod
 
+  type WavefunctionType
+    integer(label) :: INVALID = -1_label
+    integer(label) :: GAUSSIAN = 0_label
+    integer(label) :: SINC = 1_label
+  end type WavefunctionType
+
   type PotentialType   
+    integer(label) :: INVALID = -1_label
     integer(label) :: ZERO = 0_label
     integer(label) :: BOX = 1_label
     integer(label) :: BARRIER = 2_label
@@ -56,44 +64,39 @@ module sim_parameters
     integer(label) :: HYPERBOLIC_COSINE = 10_label
   end type PotentialType
 
-  type WavefunctionType
-    integer(label) :: GAUSSIAN = 0_label
-    integer(label) :: SINC = 1_label
-  end type WavefunctionType
-
   ! Defining instances of the PotentialType and WavefunctionType derived types.
   ! These will be the only instances ever used and will simply hold the different
   ! potential types and wavefcuntion types for use by other pieces of code
   type(IterationMethod), public :: Method
-  type(PotentialType), public :: PotType
   type(WavefunctionType), public :: WaveType
+  type(PotentialType), public :: PotType
 
   ! Derived type for storing the parameters fed into the simulation
   type, public :: SimulationParams
-    character(len=MAX_STR_LEN) :: param_file ! params.in 
-    character(len=MAX_STR_LEN) :: input_file ! default is no input file, default name is wave.in
-    character(len=MAX_STR_LEN) :: output_file ! wave.out
-    character(len=MAX_STR_LEN) :: log_file ! ket.out
-    integer(label) :: iter_method ! Method%CRANK_NICOLSON
-    logical :: imag_time ! .false.
-    logical :: unit_bounds ! .true.
-    integer(i32) :: step_count ! 1e5
-    integer(i32) :: write_interval ! 100
-    real(r64) :: delta_t  ! 1e-3
-    integer(i32) :: point_count ! 1024
-    real(r64) :: x_max ! 10.0
+    character(len=MAX_STR_LEN) :: param_file
+    character(len=MAX_STR_LEN) :: input_file
+    character(len=MAX_STR_LEN) :: output_file
+    character(len=MAX_STR_LEN) :: log_file
+    integer(label) :: iter_method
+    logical :: imag_time
+    logical :: unit_bounds
+    integer(i32) :: step_count
+    integer(i32) :: write_interval
+    real(r64) :: delta_t
+    integer(i32) :: point_count
+    real(r64) :: x_max
     real(r64) :: delta_x
     real(r64) :: delta_p
-    integer(label) :: wave_type ! WaveType%GAUSSIAN
-    real(r64) :: mass ! 1.0
-    real(r64) :: charge ! 1.0
-    real(r64) :: wave_offset ! -1.0
-    real(r64) :: wave_width ! 1.0
-    real(r64) :: wave_momentum ! 0.0
-    integer(label) :: pot_type ! PotType%HARMONIC
-    real(r64) :: pot_offset ! 0.0
-    real(r64) :: pot_width ! 1.0
-    real(r64) :: pot_strength ! 1.0
+    integer(label) :: wave_type
+    real(r64) :: mass
+    real(r64) :: charge
+    real(r64) :: momentum
+    real(r64) :: wave_offset
+    real(r64) :: wave_width
+    integer(label) :: pot_type
+    real(r64) :: pot_offset
+    real(r64) :: pot_width
+    real(r64) :: pot_strength
   end type SimulationParams
 
   type(SimulationParams), public :: SimParams

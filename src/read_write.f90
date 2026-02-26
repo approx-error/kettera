@@ -15,6 +15,7 @@
 
 module read_write
   ! Subroutines and functions for reading data from files and writing data to files or stdout
+  use iso_fortran_env, only: OUTPUT_UNIT
   use kinds
   use exit_codes
   use io_parameters
@@ -22,9 +23,405 @@ module read_write
 
   implicit none
 
-  public 
+  private
+
+  public :: read_param_file, init_output_file, write_output_file, &
+    close_output_file, write_log_file
 
   contains
+
+      
+    function strip(string) result(stripped)
+      ! Simple function to remove leading and trailing whitespace for a string
+      implicit none
+      
+      character(*), intent(in) :: string
+      character(len=MAX_STR_LEN) :: stripped
+
+      stripped = trim(adjustl(string))
+      return
+    end function strip
+
+    function parse_method(iter_method) result(method_label)
+      implicit none
+      
+      character(*), intent(in) :: iter_method
+      integer(label) :: method_label
+
+      select case (iter_method)
+        case (PARAM_CN)
+          method_label = Method%CRANK_NICOLSON 
+        case (PARAM_SS)
+          method_label = Method%SPLIT_STEP
+        case default
+          method_label = Method%INVALID
+      end select
+
+      return
+    end function parse_method
+
+    function parse_wave_type(wave_type) result(wave_label)
+      implicit none
+      
+      character(*), intent(in) :: wave_type
+      integer(label) :: wave_label
+
+      select case (wave_type)
+        case (PARAM_GAUSS)
+          wave_label = WaveType%GAUSSIAN 
+        case (PARAM_SINC)
+          wave_label = WaveType%SINC
+        case default
+          wave_label = WaveType%INVALID
+      end select
+
+      return
+    end function parse_wave_type
+
+    function parse_pot_type(pot_type) result(pot_label)
+      implicit none
+      
+      character(*), intent(in) :: pot_type
+      integer(label) :: pot_label
+
+      select case (pot_type)
+        case (PARAM_ZERO)
+          pot_label = PotType%ZERO  
+        case (PARAM_BOX)
+          pot_label = PotType%BOX
+        case (PARAM_BARRIER)
+          pot_label = PotType%BARRIER
+        case (PARAM_WELL)
+          pot_label = PotType%WELL
+        case (PARAM_DWELL)
+          pot_label = PotType%DOUBLE_WELL
+        case (PARAM_HARMONIC)
+          pot_label = PotType%HARMONIC
+        case (PARAM_LINEAR)
+          pot_label = PotType%LINEAR
+        case (PARAM_HLINEAR)
+          pot_label = PotType%HALF_LINEAR
+        case (PARAM_ABS)
+          pot_label = PotType%ABSOLUTE_VALUE
+        case (PARAM_LOG)
+          pot_label = PotType%LOGARITHMIC
+        case (PARAM_COSH)
+          pot_label = PotType%HYPERBOLIC_COSINE
+        case default
+          pot_label = PotType%INVALID
+      end select
+
+      return
+    end function parse_pot_type
+
+    subroutine read_param_file(filename, params, exit_code)
+      implicit none
+      
+      character(*), intent(in) :: filename
+      type(SimulationParams), intent(inout) :: params
+      integer(excode), intent(out) :: exit_code
+
+      integer(i32) :: iostatus, line_num
+      character(len=MAX_STR_LEN) :: iomessage
+      logical :: break, invalid_type, invalid_value
+
+      character(len=MAX_STR_LEN) :: line
+      character(len=MAX_STR_LEN) :: param_type
+      character(len=MAX_STR_LEN) :: param_name
+      character(len=MAX_STR_LEN) :: param_value
+
+      integer(label) :: given_type, type_label
+      integer(i32) :: int_holder, separator_id, equals_id, comment_id
+      real(r64) :: float_holder
+      logical :: bool_holder
+      character(len=PARAM_STR_LEN) :: str_holder
+
+
+      open(unit=PARAM_FILE_UNIT, file=filename, status='old', action='read', iostat=iostatus, iomsg=iomessage)
+      if (iostatus /= 0) then
+        print '(A,/,A)', 'read_param_file: ERROR:', trim(iomessage) 
+        exit_code = FILE_ERROR
+        return
+      end if 
+
+      line_num = 0
+      invalid_type = .false.
+      invalid_value = .false.
+      break = .false.
+
+      do while (.not. break)
+        
+        line_num = line_num + 1
+        given_type = NO_TYPE
+
+        read(unit=PARAM_FILE_UNIT, fmt='(A)', iostat=iostatus, iomsg=iomessage) line
+
+        if (is_iostat_end(iostatus) .or. is_iostat_eor(iostatus)) then
+          print '(A,1X,I0,A,1X,I0)', 'read_param_file: INFO: EOF or EOR reached on line', line_num, &
+            ', status code:', iostatus
+          break = .true.
+          cycle
+        end if
+
+        ! Removing leading and trailing whitespace from line
+        line = strip(line)
+
+        ! Skipping commented lines and empty lines
+        if ((line(1:1) == PARAM_COMMENT) .or. (len_trim(line) == 0)) then
+          cycle
+        end if
+
+        ! Determining the positions of the various data fields
+        separator_id = index(line, PARAM_NAME_SEPARATOR, kind=i32)
+        equals_id = index(line, PARAM_VALUE_SEPARATOR, kind=i32)
+        comment_id = index(line, PARAM_COMMENT, kind=i32)
+
+        if (separator_id == 0) then
+          print '(A,1X,I0,A,1X,A,/,A)', &
+            'read_param_file: WARNING: Invalid input parameter specification on line', &
+            line_num, ': Missing separator', PARAM_NAME_SEPARATOR, '(IGNORING THE LINE)'
+            cycle
+        end if
+
+        if (equals_id == 0) then
+          print '(A,1X,I0,A,1X,A,/,A)', &
+            'read_param_file: WARNING: Invalid input parameter specification on line', &
+            line_num, ': Missing separator', PARAM_VALUE_SEPARATOR, '(IGNORING THE LINE)'
+            cycle
+        end if  
+
+        ! Truncate the line to ignore any trailing comments if applicable
+        if (comment_id /= 0) then
+          line = line(:comment_id-1)
+        end if
+  
+        param_type = strip(line(:separator_id-1))
+        param_name = strip(line(separator_id+2:equals_id-1))
+        param_value = strip(line(equals_id+2:))
+
+        ! Check to see if param_value is 'DEF' in which case cycle to use the default value
+        ! TODO: Make it so that the code recognizes whether the variable name is valid
+        ! so that the program doesn't say it read in a variable that doesn't exist
+        if (param_value == PARAM_DEF) then
+          print '(A,1X,A)', &
+          'read_param_file: INFO: Using default value for parameter', trim(param_name)
+          cycle
+        end if
+
+        select case (param_type)
+          case (PARAM_INT)
+            read(param_value, fmt=*, iostat=iostatus, iomsg=iomessage) int_holder 
+            given_type = INT_TYPE
+          case (PARAM_FLOAT)
+            read(param_value, fmt=*, iostat=iostatus, iomsg=iomessage) float_holder 
+            given_type = FLOAT_TYPE
+          case (PARAM_BOOL)
+            read(param_value, fmt='(L)', iostat=iostatus, iomsg=iomessage) bool_holder
+            given_type = BOOL_TYPE
+          case (PARAM_STR)
+            read(param_value, fmt='(A)', iostat=iostatus, iomsg=iomessage) str_holder
+            given_type = STR_TYPE
+          case default
+            print '(A,1X,I0,A,A,A,/,A)', &
+              'read_param_file: WARNING: Invalid input parameter specification on line', &
+              line_num, ': Unknown type "', trim(param_type), '"', '(IGNORING THE LINE)'
+              cycle
+        end select
+
+        if (iostatus /= 0) then
+          print '(A,1X,I0,A,A,A,/,A,1X,A,/,A)', &
+            'read_param_file: WARNING: Invalid input parameter specification on line', &
+            line_num, ': Unreadable value"', trim(param_value), '"', 'Message:', trim(iomessage), &
+            '(IGNORING THE LINE)'
+            cycle
+        end if
+
+        name_select: select case (param_name)
+          case (PARAM_METHOD)
+            type_label = parse_method(str_holder)
+            if (given_type /= STR_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else if (type_label == Method%INVALID) then
+              invalid_value = .true.
+              exit name_select
+            else
+              params%iter_method = type_label
+            end if
+          case (PARAM_IMAG_TIME)
+            if (given_type /= BOOL_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%imag_time = bool_holder
+            end if
+          case (PARAM_UNIT_BOUNDS)
+            if (given_type /= BOOL_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%unit_bounds = bool_holder
+            end if
+          case (PARAM_STEP_COUNT)
+            if (given_type /= INT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%step_count = int_holder
+            end if
+          case (PARAM_WRITE_INTERVAL)
+            if (given_type /= INT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%write_interval = int_holder
+            end if
+          case (PARAM_DELTA_T)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%delta_t = float_holder
+            end if
+          case (PARAM_POINT_COUNT)
+            if (given_type /= INT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%point_count = int_holder
+            end if
+          case (PARAM_X_MAX)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%x_max = float_holder
+            end if
+          case (PARAM_WAVE_TYPE)
+            type_label = parse_wave_type(str_holder)
+            if (given_type /= STR_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else if (type_label == WaveType%INVALID) then
+              invalid_value = .true.
+              exit name_select
+            else
+              params%wave_type = type_label
+            end if
+          case (PARAM_MASS)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%mass = float_holder
+            end if
+          case (PARAM_CHARGE)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%charge = float_holder
+            end if
+          case (PARAM_MOMENTUM)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%momentum = float_holder
+            end if
+          case (PARAM_WAVE_OFFSET)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%wave_offset = float_holder
+            end if
+          case (PARAM_WAVE_WIDTH)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%wave_width = float_holder
+            end if
+          case (PARAM_POT_TYPE)
+            type_label = parse_pot_type(str_holder)
+            if (given_type /= STR_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else if (type_label == PotType%INVALID) then
+              invalid_value = .true.
+              exit name_select
+            else
+              params%pot_type = type_label
+            end if
+          case (PARAM_POT_OFFSET)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%pot_offset = float_holder
+            end if
+          case (PARAM_POT_WIDTH)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%pot_width = float_holder
+            end if
+          case (PARAM_POT_STRENGTH)
+            if (given_type /= FLOAT_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%pot_strength = float_holder
+            end if
+          case default
+            print '(A,A,A,1x,I0,1X,A)', &
+              'read_param_file: WARNING: Invalid variable name "', &
+              trim(param_name), '" on line', line_num, '(IGNORING THE LINE)'
+              cycle
+        end select name_select
+        
+        if (invalid_type) then
+          print '(A,1X,A,1X,A,1X,I0,1X,A)', &
+            'read_param_file: WARNING: Invalid type specification for variable', &
+            trim(param_name), 'on line', line_num, '(IGNORING THE LINE)'
+
+          invalid_type = .false.
+          cycle
+        end if
+
+        if (invalid_value) then
+          print '(A,1X,A,1X,A,1X,I0,1X,A)', &
+            'read_param_file: WARNING: Invalid value for variable', &
+            trim(param_name), 'on line', line_num, '(IGNORING THE LINE)'
+
+          invalid_value = .false.
+          cycle
+        end if
+
+        write(OUTPUT_UNIT, fmt='(A,1X,A,1X,A,1X)', advance='no') &
+          'read_param_file: INFO: Read in parameter', trim(param_name), ':='
+        select case (given_type)
+          case (INT_TYPE)
+            print '(I0)', int_holder
+          case (FLOAT_TYPE)
+            print '(F10.4)', float_holder
+          case (BOOL_TYPE)
+            print '(L)', bool_holder
+          case (STR_TYPE)
+            print '(A,1x,A,I0,A)', trim(str_holder), '(=', type_label, ')'
+          case default
+            print '(A)', 'This print should not show up!'
+        end select
+
+      end do
+
+      close(PARAM_FILE_UNIT)
+
+      exit_code = SUCCESS
+      return
+    end subroutine read_param_file
 
     subroutine init_output_file(params, exit_code)
       implicit none
@@ -179,9 +576,9 @@ module read_write
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')      '# wavefunction type:    ', params%wave_type
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')   '# wavefunction mass:    ', params%mass
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')   '# wavefunction charge:  ', params%charge
+      write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')   '# wavefunction momentum:', params%momentum
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')   '# wavefunction offset:  ', params%wave_offset
-      write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')   '# wavefunction width:   ', params%wave_width
-      write(LOG_FILE_UNIT, fmt='(A,1X,F10.6,/)') '# wavefunction momentum:', params%wave_momentum
+      write(LOG_FILE_UNIT, fmt='(A,1X,F10.6,/)') '# wavefunction width:   ', params%wave_width
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')    '# potential type:    ', params%pot_type
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)') '# potential offset:  ', params%pot_offset
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)') '# potential width:   ', params%pot_width

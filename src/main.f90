@@ -17,13 +17,14 @@ program main
 
   use kinds
   use exit_codes
+  use io_parameters
   use sim_parameters, only: Method, PotType, WaveType, SimParams, CNArrays, SSArrays, &
     OutArrays, LogArrays 
   !use io_parameters
 
   use alloc_dealloc ! Maybe remove later
   use initialize ! Maybe remove later
-  !use read_write ! Add later
+  use read_write ! Add later
   use iterate ! Maybe remove later 
 
   implicit none
@@ -35,33 +36,16 @@ program main
 
   integer(i32) :: N, frames
 
-  SimParams%param_file = 'not used'
+  call init_params(SimParams)
+  SimParams%param_file = DEFAULT_PARAM_FILE
   SimParams%input_file = 'not used'
-  SimParams%output_file = 'wave.out'
-  SimParams%log_file = 'ket.out'
+  SimParams%output_file = DEFAULT_OUTPUT_FILE
+  SimParams%log_file = DEFAULT_LOG_FILE
 
-  SimParams%iter_method = Method%CRANK_NICOLSON
-  SimParams%imag_time = .false.!.true.!.false.
-  SimParams%unit_bounds = .true. 
-
-  SimParams%step_count = 20000_i32!10000_i32!10000_i32
-  SimParams%write_interval = 100_i32
-  SimParams%delta_t = 1e-3_r64
-
-  SimParams%point_count = 1024_i32!512_i32
-  SimParams%x_max = 10.0_r64
-
-  SimParams%wave_type = WaveType%GAUSSIAN
-  SimParams%mass = 1.0_r64
-  SimParams%charge = 1.0_r64
-  SimParams%wave_offset = -1.0_r64
-  SimParams%wave_width = 1.0_r64
-  SimParams%wave_momentum = 0.0_r64
-
-  SimParams%pot_type = PotType%HARMONIC
-  SimParams%pot_offset = 0.0_r64
-  SimParams%pot_width = 1.0_r64
-  SimParams%pot_strength = 1.0_r64
+  call read_param_file(SimParams%param_file, SimParams, exit_code)
+  if (exit_code /= SUCCESS) then
+    stop int(exit_code, i32)
+  end if
 
   N = SimParams%point_count
   frames = SimParams%step_count / SimParams%write_interval + 1 

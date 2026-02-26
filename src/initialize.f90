@@ -14,6 +14,7 @@
 ! If not, see <https://www.gnu.org/licenses/>.
 
 module initialize
+  use iso_fortran_env, only: OUTPUT_UNIT
   use kinds
   use exit_codes
   use sim_parameters
@@ -28,12 +29,43 @@ module initialize
   integer(label), parameter :: SS_POSITION = 1_label
   integer(label), parameter :: SS_MOMENTUM = 2_label
 
-  public init_cn_iteration, init_ss_iteration
+  public init_params, init_cn_iteration, init_ss_iteration
 
   ! All private module elements have a leading underscore eg. init_delta_x
   ! whereas public module elements don't eg. init_cn_iteration
 
   contains
+
+    subroutine init_params(params)
+      ! Subroutine to initialize the simulation parameters with default values
+      implicit none
+
+      type(SimulationParams), intent(inout) :: params
+      
+      params%iter_method = Method%CRANK_NICOLSON
+      params%imag_time = .false.
+      params%unit_bounds = .true.
+
+      params%step_count = 10000_i32
+      params%write_interval = 100_i32
+      params%delta_t = 1e-3_r64
+      params%point_count = 1024_i32
+      params%x_max = 10.0_r64
+
+      params%wave_type = WaveType%GAUSSIAN
+      params%mass = 1.0_r64
+      params%charge = 1.0_r64
+      params%momentum = 0.0_r64
+      params%wave_offset = -3.0_r64
+      params%wave_width = 1.0_r64
+
+      params%pot_type = PotType%HARMONIC
+      params%pot_offset = 0.0_r64
+      params%pot_width = 1.0_r64
+      params%pot_strength = 0.5_r64
+      
+      return
+    end subroutine init_params
 
     subroutine init_delta_x(params, exit_code)
       ! Determine discretization of x-space
@@ -175,7 +207,7 @@ module initialize
       real(r64) :: factor
       integer(label) :: wave
 
-      p = params%wave_momentum
+      p = params%momentum
       w = params%wave_width
       off = params%wave_offset
       wave = params%wave_type
@@ -234,6 +266,12 @@ module initialize
         potential = 0.0_r64 * x_space
 
       else if (pot == PotType%BOX) then
+
+        where ((x_space <= -off) .or. (x_space >= off))
+          potential = s
+        elsewhere
+          potential = 0.0_r64
+        end where
 
       else if (pot == PotType%BARRIER) then
 
@@ -418,7 +456,7 @@ module initialize
         print '(A)', 'init_cn_evolution_operator: DEBUG: cn_operator:'
         do j = 1, N
           do i = 1, N
-            write(6, fmt='(F8.5,SP,F8.5,"*i",2X)', advance='no') cn_operator(j,i)
+            write(OUTPUT_UNIT, fmt='(F8.5,SP,F8.5,"*i",2X)', advance='no') cn_operator(j,i)
           end do
           print *
         end do
