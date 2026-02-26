@@ -129,9 +129,9 @@ module sim_parameters
 
   ! Derived type for storing all the arrays that contain the output data produced by the simulation
   type, public :: OutputArrays
-    real(r64), allocatable :: amplitude(:)
     real(r64), allocatable :: real_part(:)
     real(r64), allocatable :: imag_part(:)
+    real(r64), allocatable :: amplitude(:)
     real(r64), allocatable :: density(:)
   end type OutputArrays
 

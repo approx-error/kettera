@@ -73,10 +73,10 @@ module calculate
       complex(r64), intent(in) :: wavefunction(:)
       type(OutputArrays), intent(inout) :: out_arrays
 
-      out_arrays%density = abs(wavefunction ** 2)
-      out_arrays%amplitude = sqrt(out_arrays%density)
       out_arrays%real_part = real(wavefunction)
       out_arrays%imag_part = aimag(wavefunction)
+      out_arrays%density = abs(wavefunction ** 2)
+      out_arrays%amplitude = sqrt(out_arrays%density)
 
       return
     end subroutine calculate_output_quantities

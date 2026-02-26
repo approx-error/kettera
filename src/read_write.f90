@@ -432,13 +432,14 @@ module read_write
       character(len=MAX_STR_LEN) :: iomessage
       integer(i32) :: iostatus
       character(len=MAX_STR_LEN) :: filename
-      integer(i32) :: framecount
+      integer(i32) :: framecount, pointcount
       integer(label) :: method, pot, imag
       real(r64) :: x_bound
 
 
       filename = trim(params%output_file)
       framecount = params%step_count / params%write_interval + 1
+      pointcount = params%point_count
       method = params%iter_method
       x_bound = params%x_max
       pot = params%pot_type
@@ -458,7 +459,7 @@ module read_write
 
       write(OUTPUT_FILE_UNIT, fmt='(A,/,A,/,A)') trim(OUTPUT_TITLE_1), trim(OUTPUT_TITLE_2), &
         trim(OUTPUT_TITLE_3)
-      write(OUTPUT_FILE_UNIT, fmt=trim(OUTPUT_HEADER_FMT)) framecount, method, x_bound, pot, imag
+      write(OUTPUT_FILE_UNIT, fmt=trim(OUTPUT_HEADER_FMT)) framecount, method, pointcount, x_bound, pot, imag
       write(OUTPUT_FILE_UNIT, fmt='(a)') trim(OUTPUT_DATA_FIELDS)
 
       close(OUTPUT_FILE_UNIT)
@@ -506,8 +507,8 @@ module read_write
       ! data about the system
       write(OUTPUT_FILE_UNIT, fmt=OUTPUT_FRAME_FMT) frame
       do i = 1,N
-        write(OUTPUT_FILE_UNIT, fmt=OUTPUT_DATA_FMT) x_values(i), out_arrays%amplitude(i), &
-          out_arrays%real_part(i), out_arrays%imag_part(i), out_arrays%density(i), potential(i) 
+        write(OUTPUT_FILE_UNIT, fmt=OUTPUT_DATA_FMT) x_values(i), out_arrays%real_part(i), &
+          out_arrays%imag_part(i), out_arrays%amplitude(i), out_arrays%density(i), potential(i) 
       end do
 
       exit_code = SUCCESS
@@ -568,10 +569,12 @@ module read_write
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')   '# interval:  ', params%write_interval
       write(LOG_FILE_UNIT, fmt='(A,1X,I0,/)') '# frames:    ', framecount
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')       '# points:    ', params%point_count
-      write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')    '# x bound:   ', params%x_max
+      write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')    '# x max:     ', params%x_max
       write(LOG_FILE_UNIT, fmt='(A,1X,F8.6)')     '# delta x:   ', params%delta_x
       if (params%iter_method == Method%SPLIT_STEP) then
         write(LOG_FILE_UNIT, fmt='(A,1X,f8.6,/)') '# delta p:   ', params%delta_p
+      else
+        write(LOG_FILE_UNIT, fmt='()')
       end if
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')      '# wavefunction type:    ', params%wave_type
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')   '# wavefunction mass:    ', params%mass

@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+
+# Ketract is part of kettera - a numerical solver and visualizer for 
+# the time-dependent Schrödinger equation
+# Copyright (C) 2026 Juuso Kaarela
+# 
+# Kettera is free software: you can redistribute it and/or modify it under the terms of
+# the GNU General Public License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+#
+# Kettera is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with kettera.
+# If not, see <https://www.gnu.org/licenses/>.
+
+
+show_usage() {
+    echo "Usage: ketract [-f <n>] <in> -o <out>"
+    echo "Extract a single frame <n> from a kettera wavefunction"
+    echo "file <in> into <out>. <out> can then be used as an initial"
+    echo "condition to kettera"
+    echo "Run 'ketract --help' for more information"
+}
+
+show_help() {
+    echo "Usage: ketract [-f <n>] <in> -o <out>"
+    echo "Extract a single frame <n> from a kettera wavefunction"
+    echo "file <in> into <out>. <out> can then be used as an initial"
+    echo "condition to kettera"
+    echo ""
+    echo "Optional options:"
+    echo "  --help                 show this help and exit"
+    echo "  --version              show version information and exit"
+    echo "  -f <n>, --frame <n>    extract data from frame <n> of the input file"
+    echo "                         default value is -1, which corresponds to the last frame "
+    echo "Mandatory options:"
+    echo "  -o <file>, --output <file>    use <file> as the output file"
+}
+
+show_version() {
+    local VERSION=0.1
+    echo "ketract (utility for kettera) v$VERSION"
+    echo "Utility for extracting data from files produced by kettera"
+    echo "Copyright (C) 2026 Juuso Kaarela"
+    echo "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>"
+    echo "This is free software: you are free to change and redistribute it "
+    echo "There is NO WARRANTY, to the extent permitted by the law"
+}
+
+main() {
+    
+    local SUCCESS=0
+    local OPT_ERROR=1
+    local VAL_ERROR=2
+    local FILE_ERROR=3
+    local FMT_ERROR=4
+    local RANGE_ERROR=5
+
+    local frame_re="^[-]?[0-9]+$"
+    local integer_re="^[0-9]+$"
+    local float_re="^[0-9]+\.[0-9]+$"
+
+    local current
+    local frame=-1
+    local input output
+
+    if [[ "$#" -eq 0 ]]; then
+        show_usage
+        exit "$SUCCESS";
+    fi
+
+    while [[ "$#" -gt 0 ]]; do
+        current="$1"
+        case $current in
+            "--help")
+                show_help 
+                exit "$SUCCESS";
+                ;;
+            "--version")
+                show_version
+                exit "$SUCCESS";
+                ;;
+            "-o"|"--output")
+                shift
+                if [[ "$#" -eq 0 ]]; then
+                    echo "ketract: OPTION ERROR: No output file provided for flag -o!"
+                    exit "$OPT_ERROR";
+                fi
+                output="$1"
+                ;;
+            "-f"|"--frame")
+                shift
+                if [[ "$#" -eq 0 ]]; then
+                    echo "ketract: OPTION ERROR: No frame number provided for flag -f!"
+                    exit "$OPT_ERROR";
+                fi
+                echo "DEBUG: \$1: $1"
+                if [[ ! "$1" =~ $frame_re ]]; then
+                    echo "ketract: VALUE ERROR: Frame must be a number!"
+                    exit "$VAL_ERROR";
+                fi
+                if [[ "$1" -lt -1 ]]; then
+                    echo "ketract: VALUE ERROR: Frame number must be >= -1: "
+                    exit "$VAL_ERROR";
+                fi
+                frame="$1"
+                ;;
+            *)
+                if [[ -f "$1" ]]; then
+                    input="$1"
+                else
+                    echo "ketract: FILE ERROR: File '$1' does not exist!"
+                    exit "$FILE_ERROR";
+                fi
+                ;;
+        esac
+        shift
+    done
+    
+    if [[ -z "$input" ]]; then
+        echo "ketract: OPTION ERROR: No input file provided!"
+        exit "$OPT_ERROR"
+    fi
+
+    local frame_line point_line xmax_line
+    local awk_framecount awk_pointcount awk_xmax
+    local framecount pointcount xmax
+    local max_frame
+    local grep_frame sed_frame
+    local frame_lower frame_upper frame_last
+
+    # Find the line number in the input file where the frame count, point count and x max are
+    frame_line="$(grep -n "FrameCount" "$input" | awk -F":" '{print $1}')"
+    point_line="$(grep -n "PointCount" "$input" | awk -F":" '{print $1}')"
+    xmax_line="$(grep -n "XMax" "$input" | awk -F":" '{print $1}')"
+
+    if [[ "$frame_line" -ne "$point_line" ]] || [[ "$frame_line" -ne "$xmax_line" ]]; then
+        echo "ketract: FORMAT ERROR: FrameCount, PointCount and XMax are not on same line in '$input'"
+        exit "$FMT_ERROR"
+    fi
+    if [[ -z "$frame_line" ]]; then 
+        echo "ketract: FORMAT ERROR: Line containing FrameCount, PointCount and XMax not found in '$input'" 
+        exit "$FMT_ERROR";
+    fi
+    if [[ "${#frame_line}" -gt 2 ]]; then
+        echo "ketract: FORMAT ERROR: Multiple instances of FrameCount, PointCount and XMax"
+        echo "or not found in the first 99 lines of '$input'"
+        exit "$FMT_ERROR"
+    fi
+
+    awk_framecount="FNR==$frame_line{print\$2}"
+    awk_pointcount="FNR==$point_line{print\$6}"
+    awk_xmax="FNR==$xmax_line{print\$8}"
+    framecount="$(awk -F'[=;]' "$awk_framecount" "$input")" 
+    pointcount="$(awk -F'[=;]' "$awk_pointcount" "$input")" 
+    xmax="$(awk -F'[=;]' "$awk_xmax" "$input")"
+
+    if [[ ! "$framecount" =~ $integer_re ]]; then
+        echo "ketract: FORMAT ERROR: Value of FrameCount on line $frame_line in '$input'"
+        echo "is in wrong place or not a positive integer"
+        exit "$FMT_ERROR"
+    fi
+    if [[ ! "$pointcount" =~ $integer_re ]]; then
+        echo "ketract: FORMAT ERROR: Value of PointCount on line $point_line in '$input'"
+        echo "is in wrong place or not a positive integer"
+        exit "$FMT_ERROR"
+    fi
+    if [[ ! "$xmax" =~ $float_re ]]; then
+        echo "ketract: FORMAT ERROR: Value of XMax on line $xmax_line in '$input'"
+        echo "is in wrong place or not a positive floating point number"
+        exit "$FMT_ERROR"
+    fi
+
+    max_frame=$(("$framecount" - 1))
+
+    if [[ "$frame" -gt "$max_frame" ]]; then
+        echo "ketract: RANGE ERROR: Chosen frame is outside the range of frames in '$input'"
+        exit "$RANGE_ERROR"
+    fi
+
+    if [[ "$frame" -eq -1 ]]; then
+        frame="$max_frame"
+    fi
+
+    grep_frame="Frame=$frame"
+
+    frame_line="$(grep -n "$grep_frame" "$input" | awk -F":" '{print$1}')"
+
+    if [[ -z "$frame_line" ]]; then 
+        echo "ketract: FORMAT ERROR: Could not find frame $frame in '$input'" 
+        exit "$FMT_ERROR";
+    fi
+
+    frame_lower=$(("$frame_line" + 1))
+    frame_upper=$(("$frame_line" + "$pointcount"))
+    frame_last=$(("$frame_upper" + 1))
+
+    sed_frame=""$frame_lower","$frame_upper"p;"$frame_last"q"
+
+    echo "# This file was generated byt ketract and contains a wavefunction" > "$output"
+    echo "# that can be used as an initial condition for simulations in kettera" >> "$output"
+    echo "PointCount=$pointcount;XMax=$xmax" >> "$output"
+    echo "XCoord;Real;Imag" >> "$output"
+    echo "$(sed -n "$sed_frame" "$input" | cut -d';' -f1,2,3)" >> "$output"
+
+    exit "$SUCCESS";
+}
+
+main "$@"
+

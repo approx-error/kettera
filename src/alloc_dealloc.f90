@@ -260,15 +260,15 @@ module alloc_dealloc
       integer(i32) :: error_status
       character(len=MAX_STR_LEN) :: error_message
 
-      allocate(arrays%amplitude(N), source=0.0_r64, stat=error_status, errmsg=error_message)
-      if (error_status /= 0) then
-        print '(a,1/,a)', 'alloc_output_arrays: ERROR: Could not allocate amplitude array. Message: ', trim(error_message)
-        exit_code = ALLOCATION_ERROR
-        return
-      end if
       allocate(arrays%real_part(N), source=0.0_r64, stat=error_status, errmsg=error_message)
       if (error_status /= 0) then
         print '(a,1/,a)', 'alloc_output_arrays: ERROR: Could not allocate real part array. Message: ', trim(error_message)
+        exit_code = ALLOCATION_ERROR
+        return
+      end if
+      allocate(arrays%amplitude(N), source=0.0_r64, stat=error_status, errmsg=error_message)
+      if (error_status /= 0) then
+        print '(a,1/,a)', 'alloc_output_arrays: ERROR: Could not allocate amplitude array. Message: ', trim(error_message)
         exit_code = ALLOCATION_ERROR
         return
       end if
@@ -297,12 +297,6 @@ module alloc_dealloc
 
       exit_code = SUCCESS
 
-      if (allocated(arrays%amplitude)) then
-        deallocate(arrays%amplitude)
-      else
-        print '(a)', 'dealloc_output_arrays: WARNING: amplitude array was already deallocated!'
-        exit_code = DEALLOCATION_WARNING
-      end if
       if (allocated(arrays%real_part)) then
         deallocate(arrays%real_part)
       else
@@ -313,6 +307,12 @@ module alloc_dealloc
         deallocate(arrays%imag_part)
       else
         print '(a)', 'dealloc_output_arrays: WARNING: imaginary part array was already deallocated!'
+        exit_code = DEALLOCATION_WARNING
+      end if
+      if (allocated(arrays%amplitude)) then
+        deallocate(arrays%amplitude)
+      else
+        print '(a)', 'dealloc_output_arrays: WARNING: amplitude array was already deallocated!'
         exit_code = DEALLOCATION_WARNING
       end if
       if (allocated(arrays%density)) then

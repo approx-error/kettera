@@ -110,8 +110,8 @@ module io_parameters
     '# as frames that represent the state of the system at a given time. The frames can be'
   character(*), parameter, public :: OUTPUT_TITLE_3 = &
     "# animated or a single frame plotted using the program 'ketanim' supplied with kettera"
-  character(*), parameter, public :: OUTPUT_HEADER_FMT = '("Framecount=",I0,";Method=",I0,";X-Bound=",F0.2,";PotType=",I0,";ImagTime=",I0)'
-  character(*), parameter, public :: OUTPUT_DATA_FIELDS = 'X-coord;Amplitude;Real;Imag;Probability;Potential'
+  character(*), parameter, public :: OUTPUT_HEADER_FMT = '("FrameCount=",I0,";Method=",I0,";PointCount=",I0,";XMax=",F0.2,";PotType=",I0,";ImagTime=",I0)'
+  character(*), parameter, public :: OUTPUT_DATA_FIELDS = 'XCoord;Real;Imag;Amplitude;Probability;Potential'
   character(*), parameter, public :: OUTPUT_FRAME_FMT = '("Frame=",I0)'
   character(*), parameter, public :: OUTPUT_DATA_FMT = '(5('//DOUBLE_FMT//',";"),'//DOUBLE_FMT//')'
 
@@ -126,7 +126,7 @@ module io_parameters
   character(*), parameter, public :: LOG_PARAMS_TITLE = '# SIMULATION PARAMETERS USED/GENERATED:'
   character(*), parameter, public :: LOG_RESULTS_TITLE = '# SIMULATION RESULTS:'
   character(*), parameter, public :: LOG_QUANTITIES_TITLE = '# CALCULATED PHYSICAL QUANTITIES:'
-  character(*), parameter, public :: LOG_HEADER_FMT = '("Framecount=",I0,";Method=",I0,";PotType=",I0,";ImagTime=",I0)'
+  character(*), parameter, public :: LOG_HEADER_FMT = '("FrameCount=",I0,";Method=",I0,";PotType=",I0,";ImagTime=",I0)'
   character(*), parameter, public :: LOG_DATA_FIELDS = 'TimeStep;Energy;NormSquared'
   character(*), parameter, public :: LOG_DATA_FMT = '(I8,";",'//DOUBLE_FMT//',";",'//DOUBLE_FMT//')'
 
