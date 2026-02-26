@@ -2,7 +2,7 @@
 
 Kettera (from the finnish word ketterä, meaning agile or nimble and from 'ket', the name commonly used for quantum state vectors) is 
 a numerical solver for the time-dependent Schrödinger equation (TDSE) written in modern Fortran. It also comes equipped with
-python scripts for generating plots and animations based on the data produced by the solver. **Kettera is intented to be used on
+scripts for generating plots and animations based on the data produced by the solver. **Kettera is intented to be used on
 GNU/Linux systems and no guarantees for functionality are provided for users on other operating systems.**
 
 ## Features
@@ -11,13 +11,16 @@ Kettera can handle multiple different initial conditions and potentials to simul
 Initial conditons can also be read in from an external file. Kettera implements the Crank - Nicolson method as well
 as the split-step Fourier method for solving the TDSE. Kettera also comes equipped with two python scripts 'ketplot'
 and 'ketanim' which can be used to plot physical quantities as a function of time and for creating animations
-that showcase the dynamics of the simulated system.
+that showcase the dynamics of the simulated system. In addition, there is a bash script called 'ketract' bundled with
+kettera, which can be used to extract a single frame from an output file to be used as an initial condition for a
+simulation.
 
 ### Initial conditions
 
 The initial state of the system can be provided in two ways:
-    1. As normal input parameters describing the type, initial offset and initial momentum of the wave function
-    2. As an external file that contains the shape of the wave function at time t = 0
+1. As normal input parameters describing the type, initial offset and initial momentum of the wave function
+2. As an external file that contains the shape of the wave function at time t = 0. This file can be generated
+from a previous simulation using the bash script 'ketract' that is bundled with kettera
 
 ### Potentials
 
@@ -35,7 +38,8 @@ a .gif or .mov file.
 ## External Dependencies
 
 Kettera uses the [FFTW](https://www.fftw.org/) library to calculate Fourier transforms and the python scripts require
-[Numpy](https://numpy.org/) as well as [Matplotlib](https://matplotlib.org/) to function.
+[Numpy](https://numpy.org/) as well as [Matplotlib](https://matplotlib.org/) to function. In addition, 'ketract' contains
+bash-specific syntax meaning that bash is also an implicit requirement.
 
 ## Installation
 
@@ -53,11 +57,11 @@ will output Kettera's current version.
 
 TBD
 
-### Using external input files
+### Using external input files and ketract
 
 TBD
 
-### Using the visualization tools
+### Using ketanim and ketplot
 
 TBS
 

@@ -40,10 +40,12 @@ show_help() {
 }
 
 show_version() {
-    local VERSION=0.1
-    echo "ketract (utility for kettera) v$VERSION"
-    echo "Utility for extracting data from files produced by kettera"
+    local VERSION="1.0.0"
+    echo "ketract v$VERSION"
     echo "Copyright (C) 2026 Juuso Kaarela"
+    echo ""
+    echo "Ketract is part of kettera - a numerical solver and visualizer for"
+    echo "the time-dependent Schrödinger equation"
     echo "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>"
     echo "This is free software: you are free to change and redistribute it "
     echo "There is NO WARRANTY, to the extent permitted by the law"
