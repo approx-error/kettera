@@ -751,8 +751,10 @@ module read_write
         '# output file:   ', trim(params%output_file), &
         '# log file:      ', trim(params%log_file)
       write(LOG_FILE_UNIT, fmt='(A)') trim(LOG_PARAMS_TITLE)
-      write(LOG_FILE_UNIT, fmt='(A,1X,I0)')  '# method:        ', params%iter_method
-      write(LOG_FILE_UNIT, fmt='(A,1X,L)')   '# imaginary time:', params%imag_time
+      write(LOG_FILE_UNIT, fmt='(A,1X,I0)')  '# method:           ', params%iter_method
+      write(LOG_FILE_UNIT, fmt='(A,1X,L)')   '# imaginary time:   ', params%imag_time
+      write(LOG_FILE_UNIT, fmt='(A,1X,L)')   '# normalization:    ', params%normal
+      write(LOG_FILE_UNIT, fmt='(A,1X,L)')   '# orthogonalization:', params%ortho
       write(LOG_FILE_UNIT, fmt='(A,1X,L,/)') '# unit bounds:   ', params%unit_bounds
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')   '# time steps:', params%step_count
       write(LOG_FILE_UNIT, fmt='(A,1X,F8.6)') '# delta t:   ', params%delta_t
