@@ -52,7 +52,8 @@ module io_parameters
   ! User given parameter names
   character(*), parameter, public :: PARAM_METHOD = 'Method'
   character(*), parameter, public :: PARAM_IMAG_TIME = 'ImagTime'
-  character(*), parameter, public :: PARAM_NORMALIZE = 'Normalize'
+  character(*), parameter, public :: PARAM_NORMAL = 'Normal'
+  character(*), parameter, public :: PARAM_ORTHO = 'Ortho'
   character(*), parameter, public :: PARAM_UNIT_BOUNDS  = 'UnitBounds'
   character(*), parameter, public :: PARAM_STEP_COUNT = 'StepCount'
   character(*), parameter, public :: PARAM_WRITE_INTERVAL = 'WriteInterval'

@@ -53,9 +53,9 @@ program main
   call alloc_output_arrays(N, OutArrays, exit_code)
   call alloc_log_arrays(frames, LogArrays, exit_code)
 
-  cond = .false.!.true.
+  cond = .true.!.false.!.true.
   if (cond) then
-    call read_input_file(SimParams, CNArrays%wavefunction, exit_code)
+    call read_input_file(SimParams, CNArrays%orthogonal, exit_code)
     if (exit_code /= SUCCESS) then
       call dealloc_cn_arrays(CNArrays, exit_code)
       call dealloc_output_arrays(OutArrays, exit_code)

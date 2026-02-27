@@ -43,7 +43,7 @@ module iterate
       complex(r64), dimension(params%point_count) :: sub, main, sup
 
       integer(i32) :: N, steps, interval 
-      logical :: imag
+      logical :: imag, orto
 
       integer(excode) :: return_status
 
@@ -53,6 +53,7 @@ module iterate
       steps = params%step_count
       interval = params%write_interval
       imag = params%imag_time
+      orto = params%ortho
 
       call init_output_file(params, return_status)
       if (return_status /= SUCCESS) then
@@ -91,9 +92,15 @@ module iterate
           call normalize(cn_arrays%wavefunction)
         end if
 
-        ! TODO: Could add more conditions that check whether or not we want to, say,
-        ! remove the ground state at every time step so that imaginary time evolution
-        ! leads to the first excited state etc.
+        if (orto) then
+          call orthogonalize(cn_arrays%wavefunction, cn_arrays%orthogonal)
+          ! We only normalize if not iterating in imaginary time since the imaginary
+          ! time state was normalized just before orthogonalization and so we don't want
+          ! to waste time doing that again
+          if (.not. imag) then
+            call normalize(cn_arrays%wavefunction)
+          end if
+        end if
 
       end do
 
@@ -126,7 +133,7 @@ module iterate
       real(r64) :: energy, norm_squared
 
       integer(i32) :: N, steps, interval 
-      logical :: imag
+      logical :: imag, orto
 
       integer(excode) :: return_status
 
@@ -136,6 +143,7 @@ module iterate
       steps = params%step_count
       interval = params%write_interval
       imag = params%imag_time
+      orto = params%ortho
 
       call init_output_file(params, return_status)
       if (return_status /= SUCCESS) then
@@ -181,9 +189,10 @@ module iterate
           call normalize(arrays%wavefunction)
         end if
 
-        ! TODO: Could add more conditions that check whether or not we want to, say,
-        ! remove the ground state at every time step so that imaginary time evolution
-        ! leads to the first excited state etc.
+        if (orto) then
+          call orthogonalize(arrays%wavefunction, arrays%orthogonal)
+          call normalize(arrays%wavefunction)
+        end if
 
       end do
 

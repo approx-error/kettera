@@ -48,6 +48,12 @@ module alloc_dealloc
         exit_code = ALLOCATION_ERROR
         return
       end if
+      allocate(arrays%orthogonal(N), source=(0.0_r64,0.0_r64), stat=error_status, errmsg=error_message)
+      if (error_status /= 0) then
+        print '(a,1/,a)', 'alloc_cn_arrays: ERROR: Could not allocate orthogonal wavefunction. Message: ', trim(error_message)
+        exit_code = ALLOCATION_ERROR
+        return
+      end if
       allocate(arrays%potential(N), source=0.0_r64, stat=error_status, errmsg=error_message)
       if (error_status /= 0) then
         print '(a,1/,a)', 'alloc_cn_arrays: ERROR: Could not allocate potential. Message: ', trim(error_message)
@@ -95,6 +101,12 @@ module alloc_dealloc
         deallocate(arrays%wavefunction)
       else
         print '(a)', 'dealloc_cn_arrays: WARNING: wavefunction was already deallocated!'
+        exit_code = DEALLOCATION_WARNING
+      end if
+      if (allocated(arrays%orthogonal)) then
+        deallocate(arrays%orthogonal)
+      else
+        print '(a)', 'dealloc_cn_arrays: WARNING: orthogonal wavefunction was already deallocated!'
         exit_code = DEALLOCATION_WARNING
       end if
       if ((allocated(arrays%potential))) then
@@ -152,6 +164,12 @@ module alloc_dealloc
       allocate(arrays%wavefunction(N), source=(0.0_r64,0.0_r64), stat=error_status, errmsg=error_message)
       if (error_status /= 0) then
         print '(a,1/,a)', 'alloc_ss_arrays: ERROR: Could not allocate wavefunction. Message: ', trim(error_message)
+        exit_code = ALLOCATION_ERROR
+        return
+      end if
+      allocate(arrays%orthogonal(N), source=(0.0_r64,0.0_r64), stat=error_status, errmsg=error_message)
+      if (error_status /= 0) then
+        print '(a,1/,a)', 'alloc_ss_arrays: ERROR: Could not allocate orthogonalwavefunction. Message: ', trim(error_message)
         exit_code = ALLOCATION_ERROR
         return
       end if
@@ -214,6 +232,12 @@ module alloc_dealloc
         deallocate(arrays%wavefunction)
       else
         print '(a)', 'dealloc_ss_arrays: WARNING: wavefunction was already deallocated!'
+        exit_code = DEALLOCATION_WARNING
+      end if
+      if (allocated(arrays%orthogonal)) then
+        deallocate(arrays%orthogonal)
+      else
+        print '(a)', 'dealloc_ss_arrays: WARNING: orthogonal wavefunction was already deallocated!'
         exit_code = DEALLOCATION_WARNING
       end if
       if (allocated(arrays%potential)) then

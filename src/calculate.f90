@@ -65,6 +65,20 @@ module calculate
       wavefunction = wavefunction / sqrt(norm_squared)
     end subroutine normalize
 
+    subroutine orthogonalize(wavefunction, orthogonal)
+      ! Orthogonalizes the given wavefunction w.r.t. to orthogonal
+      ! ie. sets <wavefunction|orthogonal> := 0
+      implicit none
+      
+      complex(r64), intent(inout) :: wavefunction(:)
+      complex(r64), intent(in) :: orthogonal(:)
+
+      complex(r64) :: projection
+
+      projection = dot_product(orthogonal, wavefunction)
+      wavefunction = wavefunction - projection * orthogonal
+    end subroutine orthogonalize
+
     subroutine calculate_output_quantities(wavefunction, out_arrays)
       ! Calculates the amplitude, real part, imaginary part and probability density
       ! of the given wavefunction

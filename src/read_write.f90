@@ -259,12 +259,19 @@ module read_write
             else
               params%imag_time = bool_holder
             end if
-          case (PARAM_NORMALIZE)
+          case (PARAM_NORMAL)
             if (given_type /= BOOL_TYPE) then
               invalid_type = .true.
               exit name_select
             else
-              params%normalize = bool_holder
+              params%normal = bool_holder
+            end if
+          case (PARAM_ORTHO)
+            if (given_type /= BOOL_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%ortho = bool_holder
             end if
           case (PARAM_UNIT_BOUNDS)
             if (given_type /= BOOL_TYPE) then
@@ -597,7 +604,7 @@ module read_write
 
       print '(A)', '----- END READING INPUT FILE -----'
 
-      if (params%normalize) then
+      if (params%normal) then
         call normalize(wavefunction)
       end if
       

@@ -44,7 +44,8 @@ module initialize
       
       params%iter_method = Method%CRANK_NICOLSON
       params%imag_time = .false.
-      params%normalize = .true.
+      params%normal = .true.
+      params%ortho = .false.
       params%unit_bounds = .true.
 
       params%step_count = 10000_i32
@@ -235,7 +236,7 @@ module initialize
 
       end if
 
-      if (params%normalize) then
+      if (params%normal) then
         call normalize(wavefunction)
       end if
 
@@ -531,11 +532,12 @@ module initialize
       if (exit_code /= SUCCESS) then
         return
       end if
-      if (.not. extern_input) then
-        arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
-        if (exit_code /= SUCCESS) then
-          return
-        end if
+      arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
+      if (exit_code /= SUCCESS) then
+        return
+      end if
+      if (extern_input .and. .not. params%ortho) then
+        arrays%wavefunction = arrays%orthogonal
       end if
       arrays%potential =  init_potential(params, arrays%x_space, exit_code)
       if (exit_code /= SUCCESS) then
@@ -581,11 +583,12 @@ module initialize
       if (exit_code /= SUCCESS) then
         return
       end if
-      if (.not. extern_input) then
-        arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
-        if (exit_code /= SUCCESS) then
-          return
-        end if
+      arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
+      if (exit_code /= SUCCESS) then
+        return
+      end if
+      if (extern_input .and. .not. params%ortho) then
+        arrays%wavefunction = arrays%orthogonal
       end if
       arrays%potential =  init_potential(params, arrays%x_space, exit_code)
       if (exit_code /= SUCCESS) then

@@ -79,7 +79,8 @@ module sim_parameters
     character(len=MAX_STR_LEN) :: log_file
     integer(label) :: iter_method
     logical :: imag_time
-    logical :: normalize
+    logical :: normal
+    logical :: ortho
     logical :: unit_bounds
     integer(i32) :: step_count
     integer(i32) :: write_interval
@@ -106,6 +107,7 @@ module sim_parameters
   type, public :: CrankNicolsonArrays
     real(r64), allocatable :: x_space(:)
     complex(r64), allocatable :: wavefunction(:)
+    complex(r64), allocatable :: orthogonal(:)
     real(r64), allocatable :: potential(:)
     real(r64), allocatable :: hamiltonian(:,:)
     complex(r64), allocatable :: forward_op(:,:)
@@ -119,6 +121,7 @@ module sim_parameters
     real(r64), allocatable :: x_space(:)
     real(r64), allocatable :: p_space(:)
     complex(r64), allocatable :: wavefunction(:)
+    complex(r64), allocatable :: orthogonal(:)
     real(r64), allocatable :: potential(:)
     real(r64), allocatable :: kinetic(:)
     real(r64), allocatable :: hamiltonian(:,:)
