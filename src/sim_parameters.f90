@@ -79,6 +79,7 @@ module sim_parameters
     character(len=MAX_STR_LEN) :: log_file
     integer(label) :: iter_method
     logical :: imag_time
+    logical :: normalize
     logical :: unit_bounds
     integer(i32) :: step_count
     integer(i32) :: write_interval

@@ -20,17 +20,17 @@ module read_write
   use exit_codes
   use io_parameters
   use sim_parameters
+  use calculate, only: normalize
 
   implicit none
 
   private
 
-  public :: read_param_file, init_output_file, write_output_file, &
+  public :: read_param_file, read_input_file, init_output_file, write_output_file, &
     close_output_file, write_log_file
 
   contains
 
-      
     function strip(string) result(stripped)
       ! Simple function to remove leading and trailing whitespace for a string
       implicit none
@@ -114,12 +114,13 @@ module read_write
       return
     end function parse_pot_type
 
-    subroutine read_param_file(filename, params, exit_code)
+    subroutine read_param_file(params, exit_code)
       implicit none
       
-      character(*), intent(in) :: filename
       type(SimulationParams), intent(inout) :: params
       integer(excode), intent(out) :: exit_code
+
+      character(len=MAX_STR_LEN) :: filename
 
       integer(i32) :: iostatus, line_num
       character(len=MAX_STR_LEN) :: iomessage
@@ -136,6 +137,7 @@ module read_write
       logical :: bool_holder
       character(len=PARAM_STR_LEN) :: str_holder
 
+      filename = trim(params%param_file)
 
       open(unit=PARAM_FILE_UNIT, file=filename, status='old', action='read', iostat=iostatus, iomsg=iomessage)
       if (iostatus /= 0) then
@@ -148,6 +150,8 @@ module read_write
       invalid_type = .false.
       invalid_value = .false.
       break = .false.
+
+      print '(A)', '----- BEGIN READING PARAMETER FILE -----'
 
       do while (.not. break)
         
@@ -231,7 +235,7 @@ module read_write
         if (iostatus /= 0) then
           print '(A,1X,I0,A,A,A,/,A,1X,A,/,A)', &
             'read_param_file: WARNING: Invalid input parameter specification on line', &
-            line_num, ': Unreadable value"', trim(param_value), '"', 'Message:', trim(iomessage), &
+            line_num, ': Unreadable value "', trim(param_value), '"', 'Message:', trim(iomessage), &
             '(IGNORING THE LINE)'
             cycle
         end if
@@ -254,6 +258,13 @@ module read_write
               exit name_select
             else
               params%imag_time = bool_holder
+            end if
+          case (PARAM_NORMALIZE)
+            if (given_type /= BOOL_TYPE) then
+              invalid_type = .true.
+              exit name_select
+            else
+              params%normalize = bool_holder
             end if
           case (PARAM_UNIT_BOUNDS)
             if (given_type /= BOOL_TYPE) then
@@ -412,16 +423,188 @@ module read_write
           case (STR_TYPE)
             print '(A,1x,A,I0,A)', trim(str_holder), '(=', type_label, ')'
           case default
-            print '(A)', 'This print should not show up!'
+            print '(A)', 'read_param_file: INFO: Type not recognized'
         end select
 
       end do
 
       close(PARAM_FILE_UNIT)
 
+      print '(A)', '----- END READING PARAMETER FILE -----'
+
       exit_code = SUCCESS
       return
     end subroutine read_param_file
+
+    subroutine read_input_file(params, wavefunction, exit_code)
+      implicit none
+      
+      type(SimulationParams), intent(inout) :: params
+      complex(r64), intent(inout) :: wavefunction(params%point_count)
+      integer(excode), intent(out) :: exit_code
+
+      character(len=MAX_STR_LEN) :: filename
+
+      integer(i32) :: iostatus, line_num, array_index
+      character(len=MAX_STR_LEN) :: iomessage
+      logical :: break, invalid_value
+
+      character(len=MAX_STR_LEN) :: line
+      character(len=MAX_STR_LEN) :: point_count_str, x_max_str
+      integer(i32) :: point_count_int
+      real(r64) :: x_max_float
+      integer(i32) :: equals1_id, equals2_id, semicolon_id
+      logical :: params_read
+      character(len=MAX_STR_LEN) :: real_str, imag_str
+      real(r64) :: real_holder, imag_holder
+
+      filename = trim(params%input_file)
+
+      open(unit=INPUT_FILE_UNIT, file=filename, status='old', action='read', iostat=iostatus, iomsg=iomessage)
+      if (iostatus /= 0) then
+        print '(A,/,A)', 'read_input_file: ERROR:', trim(iomessage) 
+        exit_code = FILE_ERROR
+        return
+      end if 
+
+      line_num = 0
+      array_index = 1
+      invalid_value = .false.
+      params_read = .false.
+      break = .false.
+
+      print '(A)', '----- BEGIN READING INPUT FILE -----'
+
+      do while (.not. break)
+        
+        line_num = line_num + 1
+
+        read(unit=INPUT_FILE_UNIT, fmt='(A)', iostat=iostatus, iomsg=iomessage) line
+
+        if (is_iostat_end(iostatus) .or. is_iostat_eor(iostatus)) then
+          print '(A,1X,I0,A,1X,I0)', 'read_input_file: INFO: EOF or EOR reached on line', line_num, &
+            ', status code:', iostatus
+          break = .true.
+          cycle
+        end if
+
+        ! Removing leading and trailing whitespace from line
+        line = strip(line)
+
+        ! Skipping commented lines, header line and empty lines
+        if ((line(1:1) == INPUT_COMMENT) .or. (line == INPUT_HEADER) .or. (len_trim(line) == 0)) then
+          cycle
+        end if
+
+        ! Checking that the parameters in the input file match the given parameters
+        ! so that the wave function can fit properly into the space
+        if (.not. params_read) then
+          equals1_id = index(line, INPUT_VALUE_SEPARATOR, kind=i32)
+          equals2_id = index(line, INPUT_VALUE_SEPARATOR, kind=i32, back=.true.)
+          semicolon_id = index(line, INPUT_FIELD_SEPARATOR, kind=i32)
+
+          if ((equals1_id == 0) .or. (equals2_id == 0) .or. (semicolon_id == 0)) then
+            print '(A,1X,I0,1X,A,/,A)', &
+              'read_input_file: ERROR: Invalid parameter specification line', line_num, &
+              'in input file:', line
+            exit_code = GIVEN_PARAMETER_ERROR
+            return
+          end if
+
+          point_count_str = strip(line(equals1_id+1:semicolon_id-1)) 
+          print '(A,1X,A)', 'DEBUG:', trim(point_count_str)
+          x_max_str = strip(line(equals2_id+1:))
+          print '(A,1X,A)', 'DEBUG:', trim(x_max_str)
+
+          read(point_count_str, fmt=*, iostat=iostatus, iomsg=iomessage) point_count_int
+          if (iostatus /= 0) then
+            print '(A,1X,I0,A,A,A,/,A,1X,A)', &
+              'read_input_file: ERROR: Invalid parameter specification line', &
+              line_num, ': Unreadable value "', trim(point_count_str), '"', 'Message:', trim(iomessage)
+            exit_code = GIVEN_PARAMETER_ERROR
+            return
+          end if
+          read(x_max_str, fmt=*, iostat=iostatus, iomsg=iomessage) x_max_float
+          if (iostatus /= 0) then
+            print '(A,1X,I0,A,A,A,/,A,1X,A)', &
+              'read_input_file: ERROR: Invalid parameter specification line', &
+              line_num, ': Unreadable value "', trim(x_max_str), '"', 'Message:', trim(iomessage)
+            exit_code = GIVEN_PARAMETER_ERROR
+            return
+          end if
+  
+          if (point_count_int /= params%point_count) then
+            print '(A,1X,I0,1X,A,1X,I0)', 'read_input_file: ERROR: Input file PointCount', &
+              point_count_int, 'is different from parameter PointCount', params%point_count
+            exit_code = GIVEN_PARAMETER_ERROR
+            return
+          end if
+
+          if (abs(x_max_float - params%x_max) >= EPS) then
+            print '(A,1X,F6.2,1X,A,1X,F6.2)', 'read_input_file: ERROR: Input file XMax', &
+              x_max_float, 'is different from parameter XMax', params%x_max
+            exit_code = GIVEN_PARAMETER_ERROR
+            return
+          end if
+
+          params_read = .true.
+          cycle
+        end if
+        
+        semicolon_id = index(line, INPUT_FIELD_SEPARATOR, kind=i32)
+
+        if (semicolon_id == 0) then
+          print '(A,1X,I0,1X,A,/,A)', &
+            'read_input_file: ERROR: Invalid data line', line_num, &
+            'in input file:', line
+          exit_code = GIVEN_PARAMETER_ERROR
+          return
+        end if
+
+        real_str = strip(line(:semicolon_id-1))
+        imag_str = strip(line(semicolon_id+1:))
+
+
+        read(real_str, fmt=*, iostat=iostatus, iomsg=iomessage) real_holder
+        if (iostatus /= 0) then
+          print '(A,1X,I0,A,A,A,/,A,1X,A)', &
+            'read_input_file: ERROR: Invalid data line', &
+            line_num, ': Unreadable value "', trim(real_str), '"', 'Message:', trim(iomessage)
+          exit_code = GIVEN_PARAMETER_ERROR
+          return
+        end if
+        read(imag_str, fmt=*, iostat=iostatus, iomsg=iomessage) imag_holder
+        if (iostatus /= 0) then
+          print '(A,1X,I0,A,A,A,/,A,1X,A)', &
+            'read_input_file: ERROR: Invalid parameter specification line', &
+            line_num, ': Unreadable value "', trim(imag_str), '"', 'Message:', trim(iomessage)
+          exit_code = GIVEN_PARAMETER_ERROR
+          return
+        end if
+
+        if (array_index <= params%point_count) then
+          wavefunction(array_index) = cmplx(real_holder, imag_holder, kind=r64)
+          array_index = array_index + 1
+        else
+          print '(A)', 'read_input_line: ERROR: Input file contains more data that can fit inside allocated space!'
+          exit_code = GIVEN_PARAMETER_ERROR
+          return
+        end if
+
+      end do
+
+      close(INPUT_FILE_UNIT)
+
+      print '(A)', '----- END READING INPUT FILE -----'
+
+      if (params%normalize) then
+        call normalize(wavefunction)
+      end if
+      
+      exit_code = SUCCESS
+      return
+
+    end subroutine read_input_file
 
     subroutine init_output_file(params, exit_code)
       implicit none

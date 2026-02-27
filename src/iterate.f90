@@ -62,8 +62,8 @@ module iterate
 
       call vectorize_tridiagonal_matrix(params, cn_arrays%backward_op, sub, main, sup)
 
-      print '(a)', '----- BEGIN CRANK - NICOLSON METHOD ITERATION -----'
-      print '(a)', 'TimeStep Energy               NormSquared'
+      print '(A)', '----- BEGIN CRANK - NICOLSON METHOD ITERATION -----'
+      print '(A8,1X,A20,1X,A20)', 'TimeStep', 'Energy', 'NormSquared'
 
       frame = 0
       do t = 0, steps
@@ -73,7 +73,7 @@ module iterate
 
           call calculate_logging_quantities(frame+1, t, cn_arrays%wavefunction, cn_arrays%hamiltonian, log_arrays)
 
-          print '(I8,1X,F20.15,1X,F17.15)', t, log_arrays%energies(frame+1), log_arrays%squared_norms(frame+1)
+          print '(I8,1X,F20.15,1X,F20.15)', t, log_arrays%energies(frame+1), log_arrays%squared_norms(frame+1)
           call write_output_file(params, frame, out_arrays, cn_arrays%x_space, cn_arrays%potential, return_status) 
           if (return_status /= SUCCESS) then
             exit_code = return_status

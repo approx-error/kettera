@@ -44,6 +44,7 @@ module initialize
       
       params%iter_method = Method%CRANK_NICOLSON
       params%imag_time = .false.
+      params%normalize = .true.
       params%unit_bounds = .true.
 
       params%step_count = 10000_i32
@@ -218,13 +219,11 @@ module initialize
 
         factor = 1.0_r64 / sqrt(2.0_r64 * PI_CONST * w**2)
         wavefunction = factor * momentum_term * exp(-(x_space - off)**2 / (2 * w**2))
-        call normalize(wavefunction)
 
       else if (wave == WaveType%SINC) then
 
         factor = PI_CONST / w
         wavefunction = momentum_term * sinc(factor * (x_space - off))
-        call normalize(wavefunction)
 
       else
 
@@ -234,6 +233,10 @@ module initialize
         exit_code = GIVEN_PARAMETER_ERROR
         return
 
+      end if
+
+      if (params%normalize) then
+        call normalize(wavefunction)
       end if
 
       exit_code = SUCCESS
@@ -510,13 +513,14 @@ module initialize
       return
     end function init_ss_evolution_operator
 
-    subroutine init_cn_iteration(params, arrays, exit_code)
+    subroutine init_cn_iteration(params, arrays, extern_input, exit_code)
       ! This subroutine is used to initialize the variables and
       ! parameters required to perform Crank - Nicolson method iteration
       implicit none
       
       type(SimulationParams), intent(inout) :: params
       type(CrankNicolsonArrays), intent(inout) :: arrays
+      logical, intent(in) :: extern_input
       integer(excode), intent(out) :: exit_code 
 
       call init_delta_x(params, exit_code)
@@ -527,9 +531,11 @@ module initialize
       if (exit_code /= SUCCESS) then
         return
       end if
-      arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
-      if (exit_code /= SUCCESS) then
-        return
+      if (.not. extern_input) then
+        arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
+        if (exit_code /= SUCCESS) then
+          return
+        end if
       end if
       arrays%potential =  init_potential(params, arrays%x_space, exit_code)
       if (exit_code /= SUCCESS) then
@@ -549,13 +555,14 @@ module initialize
       return
     end subroutine init_cn_iteration
 
-    subroutine init_ss_iteration(params, arrays, exit_code)
+    subroutine init_ss_iteration(params, arrays, extern_input, exit_code)
       ! This subroutine is used to initialize the variables and
       ! parameters required to perform split step method iteration
       implicit none
       
       type(SimulationParams), intent(inout) :: params
       type(SplitStepArrays), intent(inout) :: arrays
+      logical, intent(in) :: extern_input
       integer(excode), intent(out) :: exit_code 
 
       call init_delta_x(params, exit_code)
@@ -574,9 +581,11 @@ module initialize
       if (exit_code /= SUCCESS) then
         return
       end if
-      arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
-      if (exit_code /= SUCCESS) then
-        return
+      if (.not. extern_input) then
+        arrays%wavefunction = init_wavefunction(params, arrays%x_space, exit_code)
+        if (exit_code /= SUCCESS) then
+          return
+        end if
       end if
       arrays%potential =  init_potential(params, arrays%x_space, exit_code)
       if (exit_code /= SUCCESS) then

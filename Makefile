@@ -6,7 +6,7 @@ inc_dir := /usr/local/include
 build_dir := build
 
 parameters_src := kinds.f90 exit_codes.f90 io_parameters.f90 sim_parameters.f90
-functions_src := read_write.f90 alloc_dealloc.f90 fftw3.f90 calculate.f90 initialize.f90 iterate.f90
+functions_src := fftw3.f90 calculate.f90 read_write.f90 alloc_dealloc.f90 initialize.f90 iterate.f90
 main_src := main.f90
 src_files := $(parameters_src) $(functions_src) $(main_src)
 exe_name := kettera

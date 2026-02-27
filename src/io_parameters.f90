@@ -52,6 +52,7 @@ module io_parameters
   ! User given parameter names
   character(*), parameter, public :: PARAM_METHOD = 'Method'
   character(*), parameter, public :: PARAM_IMAG_TIME = 'ImagTime'
+  character(*), parameter, public :: PARAM_NORMALIZE = 'Normalize'
   character(*), parameter, public :: PARAM_UNIT_BOUNDS  = 'UnitBounds'
   character(*), parameter, public :: PARAM_STEP_COUNT = 'StepCount'
   character(*), parameter, public :: PARAM_WRITE_INTERVAL = 'WriteInterval'
@@ -102,6 +103,13 @@ module io_parameters
   character(*), parameter, public :: PARAM_COSH = 'cosh'
 
   ! ----- Input file definitions -----
+  !character(*), parameter, public :: INPUT_POINT_COUNT = 'PointCount'
+  !character(*), parameter, public :: INPUT_X_MAX = 'XMax'
+  character(*), parameter, public :: INPUT_HEADER = 'Real;Imag'
+
+  character(*), parameter, public :: INPUT_COMMENT = '#'
+  character(*), parameter, public :: INPUT_FIELD_SEPARATOR = ';'
+  character(*), parameter, public :: INPUT_VALUE_SEPARATOR = '='
 
   ! ----- Output file strings and format strings -----
   character(*), parameter, public :: OUTPUT_TITLE_1 = &
