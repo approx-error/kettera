@@ -31,10 +31,10 @@ show_help() {
     echo "condition to kettera"
     echo ""
     echo "Optional options:"
-    echo "  --help                 show this help and exit"
-    echo "  --version              show version information and exit"
     echo "  -f <n>, --frame <n>    extract data from frame <n> of the input file"
     echo "                         default value is -1, which corresponds to the last frame "
+    echo "  --help                 show this help and exit"
+    echo "  --version              show version information and exit"
     echo "Mandatory options:"
     echo "  -o <file>, --output <file>    use <file> as the output file"
 }
