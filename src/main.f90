@@ -19,7 +19,7 @@ program main
   use exit_codes
   use io_parameters
   use sim_parameters, only: SimParams, CNArrays, SSArrays, OutArrays, LogArrays 
-  !use io_parameters
+  use user_io
 
   use alloc_dealloc ! Maybe remove later
   use initialize ! Maybe remove later
@@ -28,42 +28,29 @@ program main
 
   implicit none
 
-  ! TESTING
-  logical :: cond
-  
+  integer(label) :: output_mode
   integer(excode) :: exit_code
 
   integer(i32) :: N, frames
 
   call init_params(SimParams)
-  SimParams%param_file = DEFAULT_PARAM_FILE
-  SimParams%input_file = DEFAULT_INPUT_FILE
-  SimParams%output_file = DEFAULT_OUTPUT_FILE
-  SimParams%log_file = DEFAULT_LOG_FILE
+
+  call parse_user_input(SimParams, output_mode, exit_code)
+
+  if (exit_code /= SUCCESS .or. exit_code /= USER_INPUT_WARNING) then
+    stop int(exit_code, i32)
+  end if
+
+  stop 0
 
   call read_param_file(SimParams, exit_code)
   if (exit_code /= SUCCESS) then
     stop int(exit_code, i32)
   end if
-
-  N = SimParams%point_count
-  frames = SimParams%step_count / SimParams%write_interval + 1 
   
   call alloc_cn_arrays(N, CNArrays, exit_code)
   call alloc_output_arrays(N, OutArrays, exit_code)
   call alloc_log_arrays(frames, LogArrays, exit_code)
-
-  cond = .true.!.false.!.true.
-  if (cond) then
-    call read_input_file(SimParams, CNArrays%orthogonal, exit_code)
-    if (exit_code /= SUCCESS) then
-      call dealloc_cn_arrays(CNArrays, exit_code)
-      call dealloc_output_arrays(OutArrays, exit_code)
-      call dealloc_log_arrays(LogArrays, exit_code)
-      stop int(exit_code, i32)
-    end if
-  end if  
-
   if (exit_code /= SUCCESS) then
     call dealloc_cn_arrays(CNArrays, exit_code)
     call dealloc_output_arrays(OutArrays, exit_code)
@@ -71,7 +58,16 @@ program main
     stop int(exit_code, i32)
   end if
 
-  call init_cn_iteration(SimParams, CNArrays, cond, exit_code)
+  call read_input_file(SimParams, CNArrays%orthogonal, exit_code)
+  if (exit_code /= SUCCESS) then
+    call dealloc_cn_arrays(CNArrays, exit_code)
+    call dealloc_output_arrays(OutArrays, exit_code)
+    call dealloc_log_arrays(LogArrays, exit_code)
+    stop int(exit_code, i32)
+  end if
+
+
+  call init_cn_iteration(SimParams, CNArrays, exit_code)
   if (exit_code /= SUCCESS) then
     call dealloc_cn_arrays(CNArrays, exit_code)
     call dealloc_output_arrays(OutArrays, exit_code)

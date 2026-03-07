@@ -467,6 +467,11 @@ module read_write
 
       filename = trim(params%input_file)
 
+      if (trim(filename) == NO_INPUT_FILE) then
+        exit_code = SUCCESS
+        return
+      end if
+
       open(unit=INPUT_FILE_UNIT, file=filename, status='old', action='read', iostat=iostatus, iomsg=iomessage)
       if (iostatus /= 0) then
         print '(A,/,A)', 'read_input_file: ERROR:', trim(iomessage) 

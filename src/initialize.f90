@@ -17,6 +17,8 @@ module initialize
   use iso_fortran_env, only: OUTPUT_UNIT
   use kinds
   use exit_codes
+  use io_parameters, only: DEFAULT_PARAM_FILE, NO_INPUT_FILE, DEFAULT_OUTPUT_FILE, &
+    DEFAULT_LOG_FILE
   use sim_parameters
   use calculate
 
@@ -41,6 +43,11 @@ module initialize
       implicit none
 
       type(SimulationParams), intent(inout) :: params
+
+      params%param_file = DEFAULT_PARAM_FILE
+      params%input_file = NO_INPUT_FILE
+      params%output_file = DEFAULT_OUTPUT_FILE
+      params%log_file = DEFAULT_LOG_FILE 
       
       params%iter_method = Method%CRANK_NICOLSON
       params%imag_time = .false.
@@ -514,15 +521,22 @@ module initialize
       return
     end function init_ss_evolution_operator
 
-    subroutine init_cn_iteration(params, arrays, extern_input, exit_code)
+    subroutine init_cn_iteration(params, arrays, exit_code)
       ! This subroutine is used to initialize the variables and
       ! parameters required to perform Crank - Nicolson method iteration
       implicit none
       
       type(SimulationParams), intent(inout) :: params
       type(CrankNicolsonArrays), intent(inout) :: arrays
-      logical, intent(in) :: extern_input
       integer(excode), intent(out) :: exit_code 
+
+      logical :: extern_input
+
+      if (trim(params%input_file) == NO_INPUT_FILE) then
+        extern_input = .false.
+      else
+        extern_input = .true.
+      end if
 
       call init_delta_x(params, exit_code)
       if (exit_code /= SUCCESS) then
@@ -557,15 +571,22 @@ module initialize
       return
     end subroutine init_cn_iteration
 
-    subroutine init_ss_iteration(params, arrays, extern_input, exit_code)
+    subroutine init_ss_iteration(params, arrays, exit_code)
       ! This subroutine is used to initialize the variables and
       ! parameters required to perform split step method iteration
       implicit none
       
       type(SimulationParams), intent(inout) :: params
       type(SplitStepArrays), intent(inout) :: arrays
-      logical, intent(in) :: extern_input
       integer(excode), intent(out) :: exit_code 
+
+      logical :: extern_input
+
+      if (trim(params%input_file) == NO_INPUT_FILE) then
+        extern_input = .false.
+      else
+        extern_input = .true.
+      end if
 
       call init_delta_x(params, exit_code)
       if (exit_code /= SUCCESS) then

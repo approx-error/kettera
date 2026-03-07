@@ -37,9 +37,34 @@ module io_parameters
   ! ----- Default file names -----
   character(*), parameter, public :: DEFAULT_PARAM_FILE = 'params.in'
   character(*), parameter, public :: DEFAULT_INPUT_FILE = 'wave.in'
+  character(*), parameter, public :: NO_INPUT_FILE = 'no'
   character(*), parameter, public :: DEFAULT_OUTPUT_FILE = 'wave.out'
   character(*), parameter, public :: DEFAULT_LOG_FILE = 'wave.log'
 
+  ! ----- User input/output parameters -----
+  integer(label), parameter, public :: QUIET_OUTPUT = 1_label
+  integer(label), parameter, public :: NORMAL_OUTPUT = 2_label
+  integer(label), parameter, public :: VERBOSE_OUTPUT = 3_label
+
+  character(*), parameter, public :: HELP_FLAG = '--help'
+  character(*), parameter, public :: VERSION_FLAG = '--version'
+  character(*), parameter, public :: SIMULATE_SHORT = '-s'
+  character(*), parameter, public :: SIMULATE_LONG = '--simulate'
+  character(*), parameter, public :: CHECK_SHORT = '-c'
+  character(*), parameter, public :: CHECK_LONG = '--check'
+  character(*), parameter, public :: VERBOSE_SHORT = '-v'
+  character(*), parameter, public :: VERBOSE_LONG = '--verbose'
+  character(*), parameter, public :: QUIET_SHORT = '-q'
+  character(*), parameter, public :: QUIET_LONG = '--quiet'
+  character(*), parameter, public :: PARAMS_SHORT  = '-p'
+  character(*), parameter, public :: PARAMS_LONG  = '--params'
+  character(*), parameter, public :: INPUT_SHORT = '-i'
+  character(*), parameter, public :: INPUT_LONG = '--input'
+  character(*), parameter, public :: OUTPUT_SHORT = '-o'
+  character(*), parameter, public :: OUTPUT_LONG = '--output'
+  character(*), parameter, public :: LOG_SHORT = '-l'
+  character(*), parameter, public :: LOG_LONG = '--long'
+ 
   ! ----- Parameter file definitions -----
 
   ! Integer labels for parameter types

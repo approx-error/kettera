@@ -22,9 +22,11 @@ module exit_codes
 
   integer(excode), parameter, public :: SUCCESS = 0
   integer(excode), parameter, public :: FILE_ERROR = 10
-  integer(excode), parameter, public :: GIVEN_PARAMETER_ERROR = 20
-  integer(excode), parameter, public :: DERIVED_PARAMETER_ERROR = 21
-  integer(excode), parameter, public :: ALLOCATION_ERROR = 30
-  integer(excode), parameter, public :: DEALLOCATION_WARNING = 31
+  integer(excode), parameter, public :: USER_INPUT_ERROR = 20
+  integer(excode), parameter, public :: USER_INPUT_WARNING = 21
+  integer(excode), parameter, public :: GIVEN_PARAMETER_ERROR = 30
+  integer(excode), parameter, public :: DERIVED_PARAMETER_ERROR = 31
+  integer(excode), parameter, public :: ALLOCATION_ERROR = 40
+  integer(excode), parameter, public :: DEALLOCATION_WARNING = 41
 
 end module exit_codes
