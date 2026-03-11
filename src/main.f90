@@ -29,6 +29,7 @@ program main
   implicit none
 
   integer(label) :: output_mode, execution_mode
+  logical :: stop_after
   integer(excode) :: exit_code
 
   integer(i32) :: N, frames
@@ -42,20 +43,20 @@ program main
 
   call init_params(SimParams)
 
-  call parse_user_input(SimParams, output_mode, execution_mode, exit_code)
+  call parse_user_input(SimParams, output_mode, execution_mode, stop_after, exit_code)
 
-  if (exit_code /= SUCCESS .and. exit_code /= USER_INPUT_WARNING) then
-    stop int(exit_code, i32)
+  if (stop_after .or. (exit_code /= SUCCESS .and. exit_code /= USER_INPUT_WARNING)) then
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call read_param_file(SimParams, exit_code)
   if (exit_code /= SUCCESS) then
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call init_scalar_params(SimParams, exit_code)
   if (exit_code /= SUCCESS) then
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   N = SimParams%point_count
@@ -64,13 +65,13 @@ program main
   call alloc_cn_arrays(N, CNArrays, exit_code)
   if (exit_code /= SUCCESS) then
     call dealloc_cn_arrays(CNArrays, exit_code)
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call read_input_file(SimParams, CNArrays%orthogonal, exit_code)
   if (exit_code /= SUCCESS .or. execution_mode == CHECK_MODE) then
     call dealloc_cn_arrays(CNArrays, exit_code)
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call alloc_output_arrays(N, OutArrays, exit_code)
@@ -79,7 +80,7 @@ program main
     call dealloc_cn_arrays(CNArrays, exit_code)
     call dealloc_output_arrays(OutArrays, exit_code)
     call dealloc_log_arrays(LogArrays, exit_code)
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call init_cn_iteration(SimParams, CNArrays, exit_code)
@@ -87,8 +88,7 @@ program main
     call dealloc_cn_arrays(CNArrays, exit_code)
     call dealloc_output_arrays(OutArrays, exit_code)
     call dealloc_log_arrays(LogArrays, exit_code)
-    print *, 'exit_code', exit_code
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call iter_cn_method(SimParams, CNArrays, OutArrays, LogArrays, exit_code)
@@ -96,12 +96,12 @@ program main
     call dealloc_cn_arrays(CNArrays, exit_code)
     call dealloc_output_arrays(OutArrays, exit_code)
     call dealloc_log_arrays(LogArrays, exit_code)
-    stop int(exit_code, i32)
+    stop int(exit_code, i32) !, quiet=.true.
   end if
 
   call dealloc_cn_arrays(CNArrays, exit_code)
   call dealloc_output_arrays(OutArrays, exit_code)
   call dealloc_log_arrays(LogArrays, exit_code)
-  stop int(exit_code, i32)
+  stop int(exit_code, i32) !, quiet=.true.
 
 end program main

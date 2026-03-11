@@ -83,12 +83,13 @@ module user_io
 
     end subroutine show_version
   
-    subroutine parse_user_input(params, output_mode, execution_mode, exit_code)
+    subroutine parse_user_input(params, output_mode, execution_mode, stop_after, exit_code)
       implicit none
       
       type(SimulationParams), intent(out) :: params
       integer(label), intent(out) :: output_mode
       integer(label), intent(out) :: execution_mode
+      logical, intent(out) :: stop_after
       integer(excode), intent(out) :: exit_code
 
       integer(i32) :: argc, i, j
@@ -101,16 +102,17 @@ module user_io
       
       logical :: argument, long_flag, short_flag, multiple_flags
 
+      exit_code = SUCCESS
+      stop_after = .false.
+
       argc = command_argument_count()
-      print '(A,1X,I0)', 'DEBUG: argc = ', argc
 
       if (argc == 0) then
         call show_usage
         exit_code = SUCCESS
+        stop_after = .true.
         return
       end if
-
-      exit_code = SUCCESS
 
       simulate_flag = .false.
       check_flag = .false.
@@ -183,11 +185,13 @@ module user_io
               print '(A)', 'DEBUG: help'
               call show_help
               exit_code = SUCCESS
+              stop_after = .true.
               return
             case (VERSION_FLAG)
               print '(A)', 'DEBUG: version'
               call show_version
               exit_code = SUCCESS
+              stop_after = .true.
               return
             case (SIMULATE_LONG)
               print '(A)', 'DEBUG: simulate'
