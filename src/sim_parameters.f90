@@ -84,6 +84,7 @@ module sim_parameters
     logical :: unit_bounds
     integer(i32) :: step_count
     integer(i32) :: write_interval
+    integer(i32) :: frame_count
     real(r64) :: delta_t
     integer(i32) :: point_count
     real(r64) :: x_max

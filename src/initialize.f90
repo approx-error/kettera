@@ -31,7 +31,7 @@ module initialize
   integer(label), parameter :: SS_POSITION = 1_label
   integer(label), parameter :: SS_MOMENTUM = 2_label
 
-  public init_params, init_cn_iteration, init_ss_iteration
+  public init_params, init_scalar_params, init_cn_iteration, init_ss_iteration
 
   ! All private module elements have a leading underscore eg. init_delta_x
   ! whereas public module elements don't eg. init_cn_iteration
@@ -57,9 +57,12 @@ module initialize
 
       params%step_count = 10000_i32
       params%write_interval = 100_i32
+      params%frame_count = 0_i32
       params%delta_t = 1e-3_r64
       params%point_count = 1024_i32
       params%x_max = 10.0_r64
+      params%delta_x = 0.0_r64
+      params%delta_p = 0.0_r64
 
       params%wave_type = WaveType%GAUSSIAN
       params%mass = 1.0_r64
@@ -75,6 +78,23 @@ module initialize
       
       return
     end subroutine init_params
+
+    subroutine init_frame_count(params, exit_code)
+      implicit none
+      
+      type(SimulationParams), intent(inout) :: params
+      integer(excode), intent(out) :: exit_code
+
+      integer(i32) :: steps, interval, frames
+
+      steps = params%step_count
+      interval = params%write_interval
+      frames = steps / interval + 1_i32
+
+      params%frame_count = frames
+      exit_code = SUCCESS
+      return
+    end subroutine init_frame_count
 
     subroutine init_delta_x(params, exit_code)
       ! Determine discretization of x-space
@@ -124,6 +144,32 @@ module initialize
       exit_code = SUCCESS
       return
     end subroutine init_delta_p
+
+    subroutine init_scalar_params(params, exit_code)
+      implicit none
+      
+      type(SimulationParams), intent(inout) :: params
+      integer(excode), intent(out) :: exit_code
+
+      call init_frame_count(params, exit_code)
+      if (exit_code /= SUCCESS) then
+        return
+      end if
+
+      call init_delta_x(params, exit_code)
+      if (exit_code /= SUCCESS) then
+        return
+      end if
+
+      call init_delta_p(params, exit_code)
+      if (exit_code /= SUCCESS) then
+        return
+      end if
+
+      exit_code = SUCCESS
+      return
+       
+    end subroutine init_scalar_params
 
     function init_x_space(params, exit_code) result(x_space)
       ! Construct the real space the wavefunction lives in
@@ -537,8 +583,8 @@ module initialize
       else
         extern_input = .true.
       end if
-
-      call init_delta_x(params, exit_code)
+  
+      call init_scalar_params(params, exit_code)
       if (exit_code /= SUCCESS) then
         return
       end if
@@ -552,6 +598,11 @@ module initialize
       end if
       if (extern_input .and. .not. params%ortho) then
         arrays%wavefunction = arrays%orthogonal
+      end if
+      if (.not. extern_input .and. params%ortho) then
+        print '(A)', 'init_cn_iteration: ERROR: Cannot orthogonalize wavefunction when no external input was provided'
+        exit_code = DERIVED_PARAMETER_ERROR
+        return
       end if
       arrays%potential =  init_potential(params, arrays%x_space, exit_code)
       if (exit_code /= SUCCESS) then
@@ -588,15 +639,11 @@ module initialize
         extern_input = .true.
       end if
 
-      call init_delta_x(params, exit_code)
+      call init_scalar_params(params, exit_code)
       if (exit_code /= SUCCESS) then
         return
       end if
       arrays%x_space = init_x_space(params, exit_code)
-      if (exit_code /= SUCCESS) then
-        return
-      end if
-      call init_delta_p(params, exit_code)
       if (exit_code /= SUCCESS) then
         return
       end if
@@ -610,6 +657,11 @@ module initialize
       end if
       if (extern_input .and. .not. params%ortho) then
         arrays%wavefunction = arrays%orthogonal
+      end if
+      if (.not. extern_input .and. params%ortho) then
+        print '(A)', 'init_ss_iteration: ERROR: Cannot orthogonalize wavefunction when no external input was provided'
+        exit_code = DERIVED_PARAMETER_ERROR
+        return
       end if
       arrays%potential =  init_potential(params, arrays%x_space, exit_code)
       if (exit_code /= SUCCESS) then

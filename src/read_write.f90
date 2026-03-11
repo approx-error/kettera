@@ -633,7 +633,7 @@ module read_write
 
 
       filename = trim(params%output_file)
-      framecount = params%step_count / params%write_interval + 1
+      framecount = params%frame_count
       pointcount = params%point_count
       method = params%iter_method
       x_bound = params%x_max
@@ -733,12 +733,13 @@ module read_write
       integer(label) :: imag
 
       filename = trim(params%log_file)
-      framecount = params%step_count / params%write_interval + 1
+      framecount = params%frame_count
       if (params%imag_time) then
         imag = 1
       else
         imag = 0
       end if
+
 
       open(unit=LOG_FILE_UNIT, file=filename, status='replace', action='write', iostat=iostatus, iomsg=iomessage)
 
@@ -747,7 +748,6 @@ module read_write
         exit_code = FILE_ERROR
         return
       end if 
-
       write(LOG_FILE_UNIT, fmt='(A,/,A,/,A)') trim(LOG_TITLE_1), trim(LOG_TITLE_2), trim(LOG_TITLE_3)
       write(LOG_FILE_UNIT, fmt='(A)') trim(LOG_FILES_TITLE)
       write(LOG_FILE_UNIT, fmt='(3(A,1X,A,/),A,1X,A)') &
@@ -762,9 +762,9 @@ module read_write
       write(LOG_FILE_UNIT, fmt='(A,1X,L)')   '# orthogonalization:', params%ortho
       write(LOG_FILE_UNIT, fmt='(A,1X,L,/)') '# unit bounds:   ', params%unit_bounds
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')   '# time steps:', params%step_count
-      write(LOG_FILE_UNIT, fmt='(A,1X,F8.6)') '# delta t:   ', params%delta_t
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')   '# interval:  ', params%write_interval
       write(LOG_FILE_UNIT, fmt='(A,1X,I0,/)') '# frames:    ', framecount
+      write(LOG_FILE_UNIT, fmt='(A,1X,F8.6)') '# delta t:   ', params%delta_t
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')       '# points:    ', params%point_count
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')    '# x max:     ', params%x_max
       write(LOG_FILE_UNIT, fmt='(A,1X,F8.6)')     '# delta x:   ', params%delta_x
