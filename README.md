@@ -45,7 +45,44 @@ bash-specific syntax meaning that bash is also an implicit requirement.
 
 **NOTE**: This section assumes you have configured the external dependencies listed in the previous section to work on your system.
 
-TBD
+1. Choose a location you want to install kettera and the bundled utilities. If you want to install kettera to all users,
+a good place might be `/usr/local/bin` (requires sudo privileges). If you want to install kettera only for the current user,
+the XDG-compliant location `~/.local/bin` is a good candidate. From this point on `~/.local/bin` is used as an example destination
+
+2. RECOMMENDED: If the chosen directory is not in your PATH environment variable, add it to the end by adding
+```sh
+export PATH=$PATH:$HOME/.local/bin
+```
+
+To your shell's configuration file (~/.bashrc for Bash, ~/.zshrc for Zsh, etc.) and then restart the terminal or run `exec bash` etc.
+to get the changes. Now you can invoke programs stored in `~/.local/bin` without specifying the whole path.
+
+3. Clone this repository to somewhere on your system you have read/write access to
+```sh
+git clone https://github.com/approx-error/kettera.git
+```
+
+4. cd into the cloned repository directory and run `make`
+
+5. After the compilation is finished the kettera binary should reside in a newly created `build` directory
+
+6. Move (or copy) the kettera binary to the directory you wish to install kettera:
+```sh
+cp build/kettera ~/.local/bin
+```
+
+7. Make sure you have execution permissions for the utilities in the `utils` directory by running
+```sh
+chmod u+x utils/ketanim
+chmod u+x utils/ketplot
+chmod u+x utils/ketract
+```
+7. Move (or copy) the utilities found in the utils directory to the directory you wish to install kettera
+```
+cp utils/ket* ~/.local/bin
+```
+
+8. Installation completed!
 
 ## Usage
 
