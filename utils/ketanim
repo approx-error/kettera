@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as anim
+
+# Status parameters
+SUCCESS = 0
+EXIT = 1
+FAIL = 2
+
+# Plotting parameters
+FIG_WIDTH = 10
+FIG_HEIGHT = 5.625
+DPI = 200
+TITLE_FONTSIZE = 15
+X_LABEL_FONTSIZE = 13
+Y_LABEL_FONTSIZE = 13
+
+AMPLITUDE_COLOR = '#000080'
+DENSITY_COLOR = AMPLITUDE_COLOR
+REAL_COLOR = '#9467BD'
+IMAG_COLOR = '#FF9F0E'
+POT_COLOR = '#D62728'
+
+# User i/o parameters
+DEFAULT_GIF = 'ketanim-out.gif'
+DEFAULT_MOV = 'ketanim-out.mov'
+FILETYPE_GIF = 'gif'
+FILETYPE_MOV = 'mov'
+# TODO: Add more
+
+# Simulation parameters
+CRANK_NICOLSON = 0
+SPLIT_STEP = 1
+
+ZERO_POT = 0
+BOX_POT = 1
+BARRIER_POT = 2
+WELL_POT = 3
+DOUBLE_WELL_POT = 4
+HARMONIC_POT = 5
+LINEAR_POT = 6
+HALF_LINEAR_POT = 7
+ABSOLUTE_VALUE_POT = 8
+LOGARITHMIC_POT = 9
+HYPERBOLIC_COSINE_POT = 10
+MORSE_POT = 11
+
+def show_usage():
+    pass
+
+def show_help():
+    pass
+
+def show_version():
+    pass
+
+def parse_arguments(argv):
+    pass
+
+def load_data(filename):
+    pass
+
+def generate_title(pot_kind, method, imag_time):
+    pass
+
+def generate_x_label(method):
+    pass
+
+def generate_y_label():
+    pass
+
+def generate_bounds(x_bound, user_xlim, user_ylim, potential):
+    pass
+
+def visualize(input_file, output_file):
+    def init():
+        pass
+
+    def draw_frame(frame_id):
+        pass
+
+    pass
+
+def main(argv):
+    pass
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
