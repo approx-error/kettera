@@ -18,7 +18,7 @@ program main
   use kinds
   use exit_codes
   use io_parameters
-  use sim_parameters, only: SimParams, CNArrays, SSArrays, OutArrays, LogArrays 
+  use sim_parameters, only: SimParams, CNArrays, SSArrays, OutArrays, LogArrays, FinResults
   use user_io
 
   use alloc_dealloc ! Maybe remove later
@@ -32,7 +32,10 @@ program main
   logical :: stop_after
   integer(excode) :: exit_code
 
+  integer(label) :: met
   integer(i32) :: N, frames
+
+  real(r64) :: time_start, time_end
 
   output_mode = 0_label
   execution_mode = 0_label
@@ -40,6 +43,13 @@ program main
 
   N = 0
   frames = 0
+
+  time_start = 0.0_r64
+  time_end = 0.0_r64
+
+  call cpu_time(time_start)
+
+  print '(A)', '----- BEGIN KETTERA -----'
 
   call init_params(SimParams)
 
@@ -49,7 +59,7 @@ program main
     stop int(exit_code, i32) !, quiet=.true.
   end if
 
-  call read_param_file(SimParams, exit_code)
+  call read_param_file(SimParams, output_mode, exit_code)
   if (exit_code /= SUCCESS) then
     stop int(exit_code, i32) !, quiet=.true.
   end if
@@ -59,16 +69,27 @@ program main
     stop int(exit_code, i32) !, quiet=.true.
   end if
 
+  met = SimParams%iter_method
   N = SimParams%point_count
   frames = SimParams%frame_count
   
-  call alloc_cn_arrays(N, CNArrays, exit_code)
-  if (exit_code /= SUCCESS) then
-    call dealloc_cn_arrays(CNArrays, exit_code)
+  if (met == Method%CRANK_NICOLSON) then
+    call alloc_cn_arrays(N, CNArrays, exit_code)
+    if (exit_code /= SUCCESS) then
+      call dealloc_cn_arrays(CNArrays, exit_code)
+      stop int(exit_code, i32) !, quiet=.true.
+    end if
+  else if (met == Method%SPLIT_STEP) then
+    print '(A)', 'kettera: ERROR: Split step method iteration is not yet implemented!'
+    exit_code = NOT_IMPLEMENTED_ERROR
+    stop int(exit_code, i32) !, quiet=.true.
+  else
+    print '(A)', 'kettera: ERROR: Invalid iteration method'
+    exit_code = GIVEN_PARAMETER_ERROR
     stop int(exit_code, i32) !, quiet=.true.
   end if
 
-  call read_input_file(SimParams, CNArrays%orthogonal, exit_code)
+  call read_input_file(SimParams, CNArrays%orthogonal, output_mode, exit_code)
   if (exit_code /= SUCCESS .or. execution_mode == CHECK_MODE) then
     call dealloc_cn_arrays(CNArrays, exit_code)
     stop int(exit_code, i32) !, quiet=.true.
@@ -91,7 +112,7 @@ program main
     stop int(exit_code, i32) !, quiet=.true.
   end if
 
-  call iter_cn_method(SimParams, CNArrays, OutArrays, LogArrays, exit_code)
+  call iter_cn_method(SimParams, CNArrays, OutArrays, LogArrays, FinResults, output_mode, exit_code)
   if (exit_code /= SUCCESS) then
     call dealloc_cn_arrays(CNArrays, exit_code)
     call dealloc_output_arrays(OutArrays, exit_code)
@@ -102,6 +123,14 @@ program main
   call dealloc_cn_arrays(CNArrays, exit_code)
   call dealloc_output_arrays(OutArrays, exit_code)
   call dealloc_log_arrays(LogArrays, exit_code)
+
+  call cpu_time(time_end)
+
+  if (output_mode /= QUIET_OUTPUT) then
+    call show_final_results(FinResults, time_start, time_end, SimParams%imag_time)
+  end if
+
+  print '(A)', '----- END KETTERA -----'
   stop int(exit_code, i32) !, quiet=.true.
 
 end program main

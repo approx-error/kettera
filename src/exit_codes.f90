@@ -20,13 +20,14 @@ module exit_codes
 
   private
 
-  integer(excode), parameter, public :: SUCCESS = 0
-  integer(excode), parameter, public :: FILE_ERROR = 10
-  integer(excode), parameter, public :: USER_INPUT_ERROR = 20
-  integer(excode), parameter, public :: USER_INPUT_WARNING = 21
-  integer(excode), parameter, public :: GIVEN_PARAMETER_ERROR = 30
-  integer(excode), parameter, public :: DERIVED_PARAMETER_ERROR = 31
-  integer(excode), parameter, public :: ALLOCATION_ERROR = 40
-  integer(excode), parameter, public :: DEALLOCATION_WARNING = 41
+  integer(excode), parameter, public :: SUCCESS = 0_excode
+  integer(excode), parameter, public :: FILE_ERROR = 10_excode
+  integer(excode), parameter, public :: USER_INPUT_ERROR = 20_excode
+  integer(excode), parameter, public :: USER_INPUT_WARNING = 21_excode
+  integer(excode), parameter, public :: GIVEN_PARAMETER_ERROR = 30_excode
+  integer(excode), parameter, public :: DERIVED_PARAMETER_ERROR = 31_excode
+  integer(excode), parameter, public :: ALLOCATION_ERROR = 40_excode
+  integer(excode), parameter, public :: DEALLOCATION_WARNING = 41_excode
+  integer(excode), parameter, public :: NOT_IMPLEMENTED_ERROR = 50_excode
 
 end module exit_codes

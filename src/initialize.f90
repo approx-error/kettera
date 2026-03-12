@@ -109,7 +109,7 @@ module initialize
       one_over_point_count = 1.0_r64 / params%point_count
       dx = 2.0_r64 * params%x_max * one_over_point_count
       if (dx > DELTA_X_MAX) then
-        print '(a,1x,f10.6,1x,a,1x,f10.6)', 'init_delta_x: ERROR: Calculated value for dx was', &
+        print '(a,1x,f10.6,1x,a,1x,f10.6)', 'kettera: ERROR: Calculated value for dx is', &
           dx, 'which is too large! dx must be at most', DELTA_X_MAX
         exit_code = DERIVED_PARAMETER_ERROR
         return
@@ -133,7 +133,7 @@ module initialize
       dx = params%delta_x
 
       if (abs(dx) <= EPS) then
-        print '(a)', 'init_delta_p: ERROR: dx has not yet been set meaning that dp cannot be set!'
+        print '(a)', 'kettera: ERROR: Cannot set dp as dx has not yet been set!'
         exit_code = DERIVED_PARAMETER_ERROR
         return
       end if
@@ -185,13 +185,13 @@ module initialize
       dx = params%delta_x
 
       if (abs(dx) <= EPS) then
-        print '(a)', 'init_x_space: ERROR: dx has not yet been set meaning that x-space cannot be defined!'
+        print '(a)', 'kettera: ERROR: x-space cannot be defined as dx has not yet been set!'
         exit_code = DERIVED_PARAMETER_ERROR
         return
       end if
 
       if (bound < X_BOUND_MIN) then
-        print '(a,1x,f10.6,1x,a,1x,f3.1)', 'init_x_space: ERROR: Given value for x bound', &
+        print '(a,1x,f10.6,1x,a,1x,f3.1)', 'kettera: ERROR: Given value for x bound', &
           bound, 'is too small! X bound must be at least', X_BOUND_MIN
         exit_code = GIVEN_PARAMETER_ERROR
         x_space = 0.0_r64
@@ -222,7 +222,7 @@ module initialize
       dp = params%delta_p
 
       if (abs(dp) <= EPS) then
-        print '(a)', 'init_p_space: ERROR: dp has not yet been set meaning that p-space cannot be defined!'
+        print '(a)', 'kettera: ERROR: p-space cannot be defined as dp has not yet been set!'
         exit_code = DERIVED_PARAMETER_ERROR
         return
       end if
@@ -281,7 +281,7 @@ module initialize
 
       else
 
-        print '(a,1x,I0,1x,a)', 'init_wavefunction: ERROR: Given value for wavefunction type', &
+        print '(a,1x,I0,1x,a)', 'kettera: ERROR: Given value for wavefunction type', &
           params%wave_type, 'is not recognized!'
         wavefunction = 0.0_r64 * x_space
         exit_code = GIVEN_PARAMETER_ERROR
@@ -385,7 +385,7 @@ module initialize
 
       else
 
-        print '(a,1x,I0,1x,a)', 'init_potential: ERROR: Given value for potential type', &
+        print '(a,1x,I0,1x,a)', 'kettera: ERROR: Given value for potential type', &
           params%pot_type, 'is not recognized!'
         potential = 0.0_r64 * x_space
         exit_code = GIVEN_PARAMETER_ERROR
@@ -502,7 +502,7 @@ module initialize
           cn_operator = identity + (IMAG_UNIT * halfstep * hamiltonian)
         end if
       else
-        print '(a,1x,I0,1x,a)', 'init_cn_evolution_operator: ERROR: Given value for direction', &
+        print '(a,1x,I0,1x,a)', 'kettera: ERROR: Given value for direction', &
           direction, 'is not recognized!'
         cn_operator = 0
         exit_code = DERIVED_PARAMETER_ERROR
@@ -510,7 +510,7 @@ module initialize
       end if
 
       if (N <= 12) then
-        print '(A)', 'init_cn_evolution_operator: DEBUG: cn_operator:'
+        print '(A)', 'kettera: DEBUG: cn_operator:'
         do j = 1, N
           do i = 1, N
             write(OUTPUT_UNIT, fmt='(F8.5,SP,F8.5,"*i",2X)', advance='no') cn_operator(j,i)
@@ -556,7 +556,7 @@ module initialize
           ss_operator = exp(-IMAG_UNIT * dt * values) ! momentum space case -> dt
         end if
       else
-        print '(a,1x,I0,1x,a)', 'init_ss_evolution_operator: ERROR: Given value for which_type', &
+        print '(a,1x,I0,1x,a)', 'kettera: ERROR: Given value for which_type', &
           which_type, 'is not recognized!'
         ss_operator = 0
         exit_code = DERIVED_PARAMETER_ERROR
@@ -600,7 +600,7 @@ module initialize
         arrays%wavefunction = arrays%orthogonal
       end if
       if (.not. extern_input .and. params%ortho) then
-        print '(A)', 'init_cn_iteration: ERROR: Cannot orthogonalize wavefunction when no external input was provided'
+        print '(A)', 'kettera: ERROR: Cannot orthogonalize wavefunction when no external input was provided'
         exit_code = DERIVED_PARAMETER_ERROR
         return
       end if
@@ -659,7 +659,7 @@ module initialize
         arrays%wavefunction = arrays%orthogonal
       end if
       if (.not. extern_input .and. params%ortho) then
-        print '(A)', 'init_ss_iteration: ERROR: Cannot orthogonalize wavefunction when no external input was provided'
+        print '(A)', 'kettera: ERROR: Cannot orthogonalize wavefunction when no external input was provided'
         exit_code = DERIVED_PARAMETER_ERROR
         return
       end if

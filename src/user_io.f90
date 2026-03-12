@@ -18,13 +18,13 @@ module user_io
   use kinds
   use exit_codes
   use io_parameters
-  use sim_parameters
+  use sim_parameters 
 
   implicit none
 
   private
 
-  public :: parse_user_input
+  public :: parse_user_input, show_final_results
 
   contains
 
@@ -127,7 +127,6 @@ module user_io
       prev_arg = ''
 
       do i = 1, argc
-        print '(A)', 'DEBUG: new arg'
         short_flag = .false.
         long_flag = .false.
         multiple_flags = .false.
@@ -135,13 +134,13 @@ module user_io
         call get_command_argument(i, arg, arg_len, arg_stat)
 
         if (arg_stat > 0) then
-          print '(A)', 'parse_user_input: ERROR: Failed to retrieve command arguments'
+          print '(A)', 'kettera: ERROR: Failed to retrieve command arguments'
           exit_code = USER_INPUT_ERROR
           return
         end if
 
         if (arg_stat == -1) then
-          print '(A,I0,A,1X,I0)', 'parse_user_input: ERROR: Maximum length for arguments (', &
+          print '(A,I0,A,1X,I0)', 'kettera: ERROR: Maximum length for arguments (', &
             MAX_STR_LEN, ' characters) exceeded in argument', i
           exit_code = USER_INPUT_ERROR
           return
@@ -149,7 +148,7 @@ module user_io
 
         if (argument) then
           if (arg(:1) == '-') then
-            print '(A,A,A,/,A)', "parse_user_input: ERROR: Expected file name but got flag '", &
+            print '(A,A,A,/,A)', "kettera: ERROR: Expected file name but got flag '", &
               trim(arg), "' instead", "Run 'kettera --help' to see correct usage"
             exit_code = USER_INPUT_ERROR
             return
@@ -157,19 +156,15 @@ module user_io
 
           select case (trim(prev_arg))
             case (PARAMS_SHORT)
-              print '(A,1X,A)', 'DEBUG: param file:', trim(arg)
               params%param_file = arg
             case (INPUT_SHORT) 
-              print '(A,1X,A)', 'DEBUG: input file:', trim(arg)
               params%input_file = arg
             case (OUTPUT_SHORT)
-              print '(A,1X,A)', 'DEBUG: output file:', trim(arg)
               params%output_file = arg
             case (LOG_SHORT)
-              print '(A,1X,A)', 'DEBUG: log file:', trim(arg)
               params%log_file = arg
             case default
-              print '(A,1X,A,1X,A)', 'parse_user_input: ERROR: Option', trim(prev_arg), &
+              print '(A,1X,A,1X,A)', 'kettera: ERROR: Option', trim(prev_arg), &
                 'does not take any arguments'
               exit_code = USER_INPUT_ERROR
               return
@@ -182,43 +177,33 @@ module user_io
           arg = arg(3:)
           select case (trim(arg))
             case (HELP_FLAG)
-              print '(A)', 'DEBUG: help'
               call show_help
               exit_code = SUCCESS
               stop_after = .true.
               return
             case (VERSION_FLAG)
-              print '(A)', 'DEBUG: version'
               call show_version
               exit_code = SUCCESS
               stop_after = .true.
               return
             case (SIMULATE_LONG)
-              print '(A)', 'DEBUG: simulate'
               arg = SIMULATE_SHORT
             case (CHECK_LONG)
-              print '(A)', 'DEBUG: check'
               arg = CHECK_SHORT
             case (VERBOSE_LONG)
-              print '(A)', 'DEBUG: verbose'
               arg = VERBOSE_SHORT
             case (QUIET_SHORT)
-              print '(A)', 'DEBUG: quiet'
               arg = QUIET_SHORT
             case (PARAMS_LONG)
-              print '(A)', 'DEBUG: params'
               arg = PARAMS_SHORT
             case (INPUT_LONG)
-              print '(A)', 'DEBUG: input'
               arg = INPUT_SHORT
             case (OUTPUT_LONG)
-              print '(A)', 'DEBUG: output'
               arg = OUTPUT_SHORT
             case (LOG_LONG)
-              print '(A)', 'DEBUG: log'
               arg = LOG_SHORT
             case default
-              print '(A,A,A,/,A)', "parse_user_input: ERROR: Unrecognized flag '", trim(arg), "'", &
+              print '(A,A,A,/,A)', "kettera: ERROR: Unrecognized flag '", trim(arg), "'", &
                 "Run 'kettera --help' to see a list of valid flags"
               exit_code = USER_INPUT_ERROR
               return
@@ -239,14 +224,13 @@ module user_io
         if (long_flag .or. short_flag) then
           select case (trim(arg))
             case (SIMULATE_SHORT)
-              print '(A)', 'DEBUG: s'
               if (simulate_flag) then
-                print '(A)', "parse_user_input: WARNING: Flag 'simulate' was set multiple times"
+                print '(A)', "kettera: WARNING: Flag 'simulate' was set multiple times"
                 exit_code = USER_INPUT_WARNING
               end if
 
               if (check_flag) then
-                print '(A)', "parse_user_input: ERROR: Cannot set flag 'simulate' as flag 'check' was already set"
+                print '(A)', "kettera: ERROR: Cannot set flag 'simulate' as flag 'check' was already set"
                 exit_code = USER_INPUT_ERROR
                 return
               end if
@@ -254,14 +238,13 @@ module user_io
               simulate_flag = .true.
 
             case (CHECK_SHORT)
-              print '(A)', 'DEBUG: c'
               if (check_flag) then
-                print '(A)', "parse_user_input: WARNING: Flag 'check' was set multiple times"
+                print '(A)', "kettera: WARNING: Flag 'check' was set multiple times"
                 exit_code = USER_INPUT_WARNING
               end if
 
               if (simulate_flag) then
-                print '(A)', "parse_user_input: ERROR: Cannot set flag 'check' as flag 'simulate' was already set"
+                print '(A)', "kettera: ERROR: Cannot set flag 'check' as flag 'simulate' was already set"
                 exit_code = USER_INPUT_ERROR
                 return
               end if
@@ -269,37 +252,34 @@ module user_io
               check_flag = .true.
 
             case (VERBOSE_SHORT)
-              print '(A)', 'DEBUG: v'
               if (verbose_flag) then
-                print '(A)', "parse_user_input: WARNING: Flag 'verbose' was set multiple times"
+                print '(A)', "kettera: WARNING: Flag 'verbose' was set multiple times"
                 exit_code = USER_INPUT_WARNING
               end if
 
               if (quiet_flag) then
-                print '(A)', "parse_user_input: WARNING: Setting flag 'verbose' flag overrides flag 'quiet'"
+                print '(A)', "kettera: WARNING: Setting flag 'verbose' flag overrides flag 'quiet'"
                 exit_code = USER_INPUT_WARNING
               end if
 
               verbose_flag = .true.
 
             case (QUIET_SHORT)
-              print '(A)', 'DEBUG: q'
               if (quiet_flag) then
-                print '(A)', "parse_user_input: WARNING: Flag 'quiet' was set multiple times"
+                print '(A)', "kettera: WARNING: Flag 'quiet' was set multiple times"
                 exit_code = USER_INPUT_WARNING
               end if
 
               if (verbose_flag) then
-                print '(A)', "parse_user_input: WARNING: Flag 'quiet' will be ignored since flag 'verbose' was already set"
+                print '(A)', "kettera: WARNING: Flag 'quiet' will be ignored since flag 'verbose' was already set"
                 exit_code = USER_INPUT_WARNING
               end if
 
               quiet_flag = .true.
 
             case (PARAMS_SHORT)
-              print '(A)', 'DEBUG: p'
               if (params_flag) then
-                print '(A)', 'parse_user_input: ERROR: Cannot set parameter file multiple times'
+                print '(A)', 'kettera: ERROR: Cannot set parameter file multiple times'
                 exit_code = USER_INPUT_ERROR
                 return
               end if
@@ -309,9 +289,8 @@ module user_io
               prev_arg = arg
 
             case (INPUT_SHORT)
-              print '(A)', 'DEBUG: i'
               if (input_flag) then
-                print '(A)', 'parse_user_input: ERROR: Cannot set input file multiple times'
+                print '(A)', 'kettera: ERROR: Cannot set input file multiple times'
                 exit_code = USER_INPUT_ERROR
                 return
               end if
@@ -327,13 +306,13 @@ module user_io
                 call get_command_argument(i+1, next_arg, arg_len, arg_stat)
 
                 if (arg_stat > 0) then
-                  print '(A)', 'parse_user_input: ERROR: Failed to retrieve command arguments'
+                  print '(A)', 'kettera: ERROR: Failed to retrieve command arguments'
                   exit_code = USER_INPUT_ERROR
                   return
                 end if
 
                 if (arg_stat == -1) then
-                  print '(A,I0,A,1X,I0)', 'parse_user_input: ERROR: Maximum length for arguments (', &
+                  print '(A,I0,A,1X,I0)', 'kettera: ERROR: Maximum length for arguments (', &
                     MAX_STR_LEN, ' characters) exceeded in argument', i+1
                   exit_code = USER_INPUT_ERROR
                   return
@@ -346,9 +325,8 @@ module user_io
               end if
 
             case (OUTPUT_SHORT)
-              print '(A)', 'DEBUG: o'
               if (output_flag) then
-                print '(A)', 'parse_user_input: ERROR: Cannot set output file multiple times'
+                print '(A)', 'kettera: ERROR: Cannot set output file multiple times'
                 exit_code = USER_INPUT_ERROR
                 return
               end if
@@ -358,9 +336,8 @@ module user_io
               prev_arg = arg
             
             case (LOG_SHORT)
-              print '(A)', 'DEBUG: l'
               if (log_flag) then
-                print '(A)', 'parse_user_input: ERROR: Cannot set log file multiple times'
+                print '(A)', 'kettera: ERROR: Cannot set log file multiple times'
                 exit_code = USER_INPUT_ERROR
                 return
               end if
@@ -370,7 +347,7 @@ module user_io
               prev_arg = arg
 
             case default
-              print '(A,A,A,/,A)', "parse_user_input: ERROR: Unrecognized flag '", trim(arg), "'", &
+              print '(A,A,A,/,A)', "kettera: ERROR: Unrecognized flag '", trim(arg), "'", &
                 "Run 'kettera --help' to see a list of valid flags"
               exit_code = USER_INPUT_ERROR
               return
@@ -383,64 +360,59 @@ module user_io
           do j = 1, len_trim(arg)
             select case (arg(j:j))
               case (SIMULATE_SHORT)
-                print '(A)', 'DEBUG: s'
                 if (simulate_flag) then
-                  print '(A)', "parse_user_input: WARNING: Flag 'simulate' was set multiple times"
+                  print '(A)', "kettera: WARNING: Flag 'simulate' was set multiple times"
                   exit_code = USER_INPUT_WARNING
                 end if
 
                 if (check_flag) then
-                  print '(A)', "parse_user_input: ERROR: Cannot set flag 'simulate' as flag 'check' was already set"
+                  print '(A)', "kettera: ERROR: Cannot set flag 'simulate' as flag 'check' was already set"
                   exit_code = USER_INPUT_ERROR
                   return
                 end if
 
                 simulate_flag = .true.
               case (CHECK_SHORT)
-                print '(A)', 'DEBUG: c'
                 if (check_flag) then
-                  print '(A)', "parse_user_input: WARNING: Flag 'check' was set multiple times"
+                  print '(A)', "kettera: WARNING: Flag 'check' was set multiple times"
                   exit_code = USER_INPUT_WARNING
                 end if
 
                 if (simulate_flag) then
-                  print '(A)', "parse_user_input: ERROR: Cannot set flag 'check' as flag 'simulate' was already set"
+                  print '(A)', "kettera: ERROR: Cannot set flag 'check' as flag 'simulate' was already set"
                   exit_code = USER_INPUT_ERROR
                   return
                 end if
 
                 check_flag = .true.
               case (VERBOSE_SHORT)
-                print '(A)', 'DEBUG: v'
                 if (verbose_flag) then
-                  print '(A)', "parse_user_input: WARNING: Flag 'verbose' was set multiple times"
+                  print '(A)', "kettera: WARNING: Flag 'verbose' was set multiple times"
                   exit_code = USER_INPUT_WARNING
                 end if
 
                 if (quiet_flag) then
-                  print '(A)', "parse_user_input: WARNING: Setting flag 'verbose' flag overrides flag 'quiet'"
+                  print '(A)', "kettera: WARNING: Setting flag 'verbose' flag overrides flag 'quiet'"
                   exit_code = USER_INPUT_WARNING
                 end if
 
                 verbose_flag = .true.
               case (QUIET_SHORT)
-                print '(A)', 'DEBUG: q'
                 if (quiet_flag) then
-                  print '(A)', "parse_user_input: WARNING: Flag 'quiet' was set multiple times"
+                  print '(A)', "kettera: WARNING: Flag 'quiet' was set multiple times"
                   exit_code = USER_INPUT_WARNING
                 end if
 
                 if (verbose_flag) then
-                  print '(A)', "parse_user_input: WARNING: Flag 'quiet' will be ignored since flag 'verbose' was already set"
+                  print '(A)', "kettera: WARNING: Flag 'quiet' will be ignored since flag 'verbose' was already set"
                   exit_code = USER_INPUT_WARNING
                 end if
 
                 quiet_flag = .true.
 
               case (INPUT_SHORT)
-                print '(A)', 'DEBUG: i'
                 if (input_flag) then
-                  print '(A)', 'parse_user_input: ERROR: Cannot set input file multiple times'
+                  print '(A)', 'kettera: ERROR: Cannot set input file multiple times'
                   exit_code = USER_INPUT_ERROR
                   return
                 end if
@@ -455,13 +427,13 @@ module user_io
                   call get_command_argument(i+1, next_arg, arg_len, arg_stat)
 
                   if (arg_stat > 0) then
-                    print '(A)', 'parse_user_input: ERROR: Failed to retrieve command arguments'
+                    print '(A)', 'kettera: ERROR: Failed to retrieve command arguments'
                     exit_code = USER_INPUT_ERROR
                     return
                   end if
 
                   if (arg_stat == -1) then
-                    print '(A,I0,A,1X,I0)', 'parse_user_input: ERROR: Maximum length for arguments (', &
+                    print '(A,I0,A,1X,I0)', 'kettera: ERROR: Maximum length for arguments (', &
                       MAX_STR_LEN, ' characters) exceeded in argument', i+1
                     exit_code = USER_INPUT_ERROR
                     return
@@ -476,7 +448,7 @@ module user_io
                 end if
                 
               case default
-                print '(A,A,A,/,A)', "parse_user_input: ERROR: Flag '", trim(arg(j:j)), & 
+                print '(A,A,A,/,A)', "kettera: ERROR: Flag '", trim(arg(j:j)), & 
                   "'is either not allowed in flag lists or is unrecognized", &
                   "Run 'kettera --help' to see a list of valid flags"
                 exit_code = USER_INPUT_ERROR
@@ -487,14 +459,14 @@ module user_io
         end if
 
         if ((.not. short_flag) .and. (.not. long_flag) .and. (.not. multiple_flags)) then
-          print '(A,A,A,/,A)', "parse_user_input: ERROR: Unrecognized argument '", trim(arg), "'", &
+          print '(A,A,A,/,A)', "kettera: ERROR: Unrecognized argument '", trim(arg), "'", &
             "Run 'kettera --help' to see a list of valid arguments"
           exit_code = USER_INPUT_ERROR
           return
         end if
 
         if (i == argc .and. argument) then
-          print '(A,A,A,/,A)', "parse_user_input: ERROR: Expected argument for flag '", trim(arg), &
+          print '(A,A,A,/,A)', "kettera: ERROR: Expected argument for flag '", trim(arg), &
             "' but reached end of arguments", "Run 'kettera --help' to see correct usage"
           exit_code = USER_INPUT_ERROR
           return
@@ -515,7 +487,7 @@ module user_io
       else if (check_flag) then
         execution_mode = CHECK_MODE
       else
-        print '(A,/,A)', "parse_user_input: ERROR: Execution mode ('simulate' or 'check') was not provided.", &
+        print '(A,/,A)', "kettera: ERROR: Execution mode ('simulate' or 'check') was not provided.", &
           "Run 'kettera --help' to see correct usage"
         exit_code = USER_INPUT_ERROR
         return
@@ -523,4 +495,43 @@ module user_io
 
       return
     end subroutine parse_user_input
+
+    subroutine show_final_results(fin_results, time_1, time_2, imag)
+      implicit none
+      
+      type(FinalResults), intent(inout) :: fin_results
+      real(r64), intent(in) :: time_1, time_2
+      logical, intent(in) :: imag
+
+      fin_results%total_time_elapsed = time_2 - time_1
+
+      print '(A)', '----- BEGIN FINAL RESULTS -----'
+        if (imag) then
+          print '(A)', 'NOTE: imaginary time was used so change in energy is due to exponential decay'
+          print '(A)', 'while change in norm squared should be negligible assuming a normalized input was used'
+          print '(A)', 'due to constant normalization during imaginary time iteration'
+        else
+          print '(A)', 'NOTE: change in energy/norm squared is due to numerical error'
+          print '(A)', 'or if the input was unnormalized and orthogonalization was on,'
+          print '(A)', 'due to normalization during the iteration'
+        end if
+        print '(A,1X,F11.6,1X,A)', 'total time elapsed:    ', fin_results%total_time_elapsed, &
+          '(seconds)'
+        print '(A,1X,F11.6,1X,A)', 'loop time elapsed:     ', fin_results%loop_time_elapsed, &
+          '(seconds)'
+        print '(A,1X,F20.15,1X,A)', 'initial energy:        ', fin_results%initial_energy, &
+          '(hbar=1 units)'
+        print '(A,1X,F20.15,1X,A)', 'final energy:          ', fin_results%final_energy, &
+          '(hbar=1 units)'
+        print '(A,1X,F20.15,1X,A)', 'change in energy:      ', fin_results%delta_energy, &
+          '(hbar=1 units)'
+        print '(A,1X,F20.15,1X,A)', 'initial norm squared:  ', fin_results%initial_norm_squared, &
+          '(unitless)'
+        print '(A,1X,F20.15,1X,A)', 'final norm squared:    ', fin_results%final_norm_squared, &
+          '(unitless)'
+        print '(A,1X,F20.15,1X,A)', 'change in norm squared:', fin_results%delta_norm_squared, &
+          '(unitless)'
+      print '(A)', '----- END FINAL RESULTS -----'
+
+    end subroutine show_final_results
 end module user_io

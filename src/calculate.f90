@@ -59,7 +59,7 @@ module calculate
 
       test = dot_product(wavefunction, wavefunction)
       if (abs(aimag(test)) >= EPS) then
-        print '(A,F18.15)', 'normalize: INFO: norm squared has nonzero imaginary component: ', aimag(test)
+        print '(A,F18.15)', 'kettera: INFO: norm squared has nonzero imaginary component: ', aimag(test)
       endif 
       norm_squared = real(test)
       wavefunction = wavefunction / sqrt(norm_squared)
@@ -111,13 +111,13 @@ module calculate
 
       test = dot_product(wavefunction, matmul(hamiltonian, wavefunction)) 
       if (abs(aimag(test)) >= EPS) then
-        print '(A,F18.15)', 'calculate_logging_quantities: INFO: energy has nonzero imaginary component: ', aimag(test)
+        print '(A,F18.15)', 'kettera: INFO: energy has nonzero imaginary component: ', aimag(test)
       endif 
       energy = real(test)
 
       test = dot_product(wavefunction, wavefunction)
       if (abs(aimag(test)) >= EPS) then
-        print '(A,F18.15)', 'calculate_logging_quantities: INFO: norm squared has nonzero imaginary component: ', aimag(test)
+        print '(A,F18.15)', 'kettera: INFO: norm squared has nonzero imaginary component: ', aimag(test)
       endif 
       norm_squared = real(test)
 
@@ -127,6 +127,33 @@ module calculate
 
       return 
     end subroutine calculate_logging_quantities
+
+    subroutine calculate_result_quantities(final_index, log_arrays, looptime_1, looptime_2, fin_results)
+      implicit none
+      
+      integer(i32), intent(in) :: final_index
+      type(LoggingArrays), intent(in) :: log_arrays
+      real(r64), intent(in) :: looptime_1, looptime_2
+      type(FinalResults), intent(out) :: fin_results
+
+      real(r64) :: init_energy, fin_energy, init_norm, fin_norm
+
+      init_energy = log_arrays%energies(1)
+      fin_energy = log_arrays%energies(final_index)
+      init_norm = log_arrays%squared_norms(1)
+      fin_norm = log_arrays%squared_norms(final_index)
+      
+      fin_results%loop_time_elapsed = looptime_2 - looptime_1
+      fin_results%initial_energy = init_energy
+      fin_results%final_energy = fin_energy
+      fin_results%delta_energy = fin_energy - init_energy
+      fin_results%initial_norm_squared = init_norm
+      fin_results%final_norm_squared = fin_norm
+      fin_results%delta_norm_squared = fin_norm - init_norm
+
+      return
+
+    end subroutine calculate_result_quantities
   
     ! ----- Crank - Nicolson method subroutines and functions -----
 

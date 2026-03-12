@@ -151,6 +151,20 @@ module sim_parameters
 
   type(LoggingArrays), public :: LogArrays
 
+  ! Derived type for storing the final results obtained from a simulation
+  type, public :: FinalResults
+    real(r64) :: total_time_elapsed = 0.0_r64
+    real(r64) :: loop_time_elapsed = 0.0_r64
+    real(r64) :: initial_energy = 0.0_r64
+    real(r64) :: final_energy = 0.0_r64
+    real(r64) :: delta_energy = 0.0_r64
+    real(r64) :: initial_norm_squared = 0.0_r64
+    real(r64) :: final_norm_squared = 0.0_r64
+    real(r64) :: delta_norm_squared = 0.0_r64
+  end type FinalResults
+
+  type(FinalResults), public :: FinResults
+
   ! Numerical parameters
   real(r64), parameter, public :: PI_CONST = 4.0_r64 * atan2(1.0_r64, 1.0_r64)
   real(r64), parameter, public :: HBAR_CONST = 1.0545718176461565e-34_r64 ! Reduced Planck constant h-bar

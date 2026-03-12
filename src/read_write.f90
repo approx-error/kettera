@@ -114,10 +114,11 @@ module read_write
       return
     end function parse_pot_type
 
-    subroutine read_param_file(params, exit_code)
+    subroutine read_param_file(params, output_mode, exit_code)
       implicit none
       
       type(SimulationParams), intent(inout) :: params
+      integer(label), intent(in) :: output_mode
       integer(excode), intent(out) :: exit_code
 
       character(len=MAX_STR_LEN) :: filename
@@ -141,7 +142,7 @@ module read_write
 
       open(unit=PARAM_FILE_UNIT, file=filename, status='old', action='read', iostat=iostatus, iomsg=iomessage)
       if (iostatus /= 0) then
-        print '(A,/,A)', 'read_param_file: ERROR:', trim(iomessage) 
+        print '(A,/,A)', 'kettera: ERROR:', trim(iomessage) 
         exit_code = FILE_ERROR
         return
       end if 
@@ -161,8 +162,10 @@ module read_write
         read(unit=PARAM_FILE_UNIT, fmt='(A)', iostat=iostatus, iomsg=iomessage) line
 
         if (is_iostat_end(iostatus) .or. is_iostat_eor(iostatus)) then
-          print '(A,1X,I0,A,1X,I0)', 'read_param_file: INFO: EOF or EOR reached on line', line_num, &
-            ', status code:', iostatus
+          if (output_mode == VERBOSE_OUTPUT) then
+            print '(A,1X,I0,A,1X,I0)', 'kettera: INFO: EOF or EOR reached on line', line_num, &
+              ', status code:', iostatus
+          end if
           break = .true.
           cycle
         end if
@@ -181,16 +184,20 @@ module read_write
         comment_id = index(line, PARAM_COMMENT, kind=i32)
 
         if (separator_id == 0) then
-          print '(A,1X,I0,A,1X,A,/,A)', &
-            'read_param_file: WARNING: Invalid input parameter specification on line', &
-            line_num, ': Missing separator', PARAM_NAME_SEPARATOR, '(IGNORING THE LINE)'
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(A,1X,I0,A,1X,A,/,A)', &
+              'kettera: WARNING: Invalid input parameter specification on line', &
+              line_num, ': Missing separator', PARAM_NAME_SEPARATOR, '(IGNORING THE LINE)'
+          end if
             cycle
         end if
 
         if (equals_id == 0) then
-          print '(A,1X,I0,A,1X,A,/,A)', &
-            'read_param_file: WARNING: Invalid input parameter specification on line', &
-            line_num, ': Missing separator', PARAM_VALUE_SEPARATOR, '(IGNORING THE LINE)'
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(A,1X,I0,A,1X,A,/,A)', &
+              'kettera: WARNING: Invalid input parameter specification on line', &
+              line_num, ': Missing separator', PARAM_VALUE_SEPARATOR, '(IGNORING THE LINE)'
+          end if
             cycle
         end if  
 
@@ -207,8 +214,10 @@ module read_write
         ! TODO: Make it so that the code recognizes whether the variable name is valid
         ! so that the program doesn't say it read in a variable that doesn't exist
         if (param_value == PARAM_DEF) then
-          print '(A,1X,A)', &
-          'read_param_file: INFO: Using default value for parameter', trim(param_name)
+          if (output_mode == VERBOSE_OUTPUT) then
+            print '(A,1X,A)', &
+              'kettera: INFO: Using default value for parameter', trim(param_name)
+          end if
           cycle
         end if
 
@@ -226,18 +235,22 @@ module read_write
             read(param_value, fmt='(A)', iostat=iostatus, iomsg=iomessage) str_holder
             given_type = STR_TYPE
           case default
-            print '(A,1X,I0,A,A,A,/,A)', &
-              'read_param_file: WARNING: Invalid input parameter specification on line', &
-              line_num, ': Unknown type "', trim(param_type), '"', '(IGNORING THE LINE)'
-              cycle
+            if (output_mode /= QUIET_OUTPUT) then
+              print '(A,1X,I0,A,A,A,/,A)', &
+                'kettera: WARNING: Invalid input parameter specification on line', &
+                line_num, ': Unknown type "', trim(param_type), '"', '(IGNORING THE LINE)'
+            end if
+            cycle
         end select
 
         if (iostatus /= 0) then
-          print '(A,1X,I0,A,A,A,/,A,1X,A,/,A)', &
-            'read_param_file: WARNING: Invalid input parameter specification on line', &
-            line_num, ': Unreadable value "', trim(param_value), '"', 'Message:', trim(iomessage), &
-            '(IGNORING THE LINE)'
-            cycle
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(A,1X,I0,A,A,A,/,A,1X,A,/,A)', &
+              'kettera: WARNING: Invalid input parameter specification on line', &
+              line_num, ': Unreadable value "', trim(param_value), '"', 'Message:', trim(iomessage), &
+              '(IGNORING THE LINE)'
+          end if
+          cycle
         end if
 
         name_select: select case (param_name)
@@ -394,44 +407,52 @@ module read_write
               params%pot_strength = float_holder
             end if
           case default
-            print '(A,A,A,1x,I0,1X,A)', &
-              'read_param_file: WARNING: Invalid variable name "', &
-              trim(param_name), '" on line', line_num, '(IGNORING THE LINE)'
-              cycle
+            if (output_mode /= QUIET_OUTPUT) then
+              print '(A,A,A,1x,I0,1X,A)', &
+                'kettera: WARNING: Invalid variable name "', &
+                trim(param_name), '" on line', line_num, '(IGNORING THE LINE)'
+            end if
+            cycle
         end select name_select
         
         if (invalid_type) then
-          print '(A,1X,A,1X,A,1X,I0,1X,A)', &
-            'read_param_file: WARNING: Invalid type specification for variable', &
-            trim(param_name), 'on line', line_num, '(IGNORING THE LINE)'
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(A,1X,A,1X,A,1X,I0,1X,A)', &
+              'kettera: WARNING: Invalid type specification for variable', &
+              trim(param_name), 'on line', line_num, '(IGNORING THE LINE)'
+          end if
 
           invalid_type = .false.
           cycle
         end if
 
         if (invalid_value) then
-          print '(A,1X,A,1X,A,1X,I0,1X,A)', &
-            'read_param_file: WARNING: Invalid value for variable', &
-            trim(param_name), 'on line', line_num, '(IGNORING THE LINE)'
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(A,1X,A,1X,A,1X,I0,1X,A)', &
+              'kettera: WARNING: Invalid value for variable', &
+              trim(param_name), 'on line', line_num, '(IGNORING THE LINE)'
+          end if
 
           invalid_value = .false.
           cycle
         end if
-
-        write(OUTPUT_UNIT, fmt='(A,1X,A,1X,A,1X)', advance='no') &
-          'read_param_file: INFO: Read in parameter', trim(param_name), ':='
-        select case (given_type)
-          case (INT_TYPE)
-            print '(I0)', int_holder
-          case (FLOAT_TYPE)
-            print '(F10.4)', float_holder
-          case (BOOL_TYPE)
-            print '(L)', bool_holder
-          case (STR_TYPE)
-            print '(A,1x,A,I0,A)', trim(str_holder), '(=', type_label, ')'
-          case default
-            print '(A)', 'read_param_file: INFO: Type not recognized'
-        end select
+        
+        if (output_mode == VERBOSE_OUTPUT) then
+          write(OUTPUT_UNIT, fmt='(A,1X,A,1X,A,1X)', advance='no') &
+            'kettera: INFO: Read in parameter', trim(param_name), ':='
+          select case (given_type)
+            case (INT_TYPE)
+              print '(I0)', int_holder
+            case (FLOAT_TYPE)
+              print '(F10.4)', float_holder
+            case (BOOL_TYPE)
+              print '(L)', bool_holder
+            case (STR_TYPE)
+              print '(A,1x,A,I0,A)', trim(str_holder), '(=', type_label, ')'
+            case default
+              print '(A)', 'kettera: INFO: Type not recognized'
+          end select
+        end if
 
       end do
 
@@ -443,11 +464,12 @@ module read_write
       return
     end subroutine read_param_file
 
-    subroutine read_input_file(params, wavefunction, exit_code)
+    subroutine read_input_file(params, wavefunction, output_mode, exit_code)
       implicit none
       
       type(SimulationParams), intent(inout) :: params
       complex(r64), intent(inout) :: wavefunction(params%point_count)
+      integer(label), intent(in) :: output_mode
       integer(excode), intent(out) :: exit_code
 
       character(len=MAX_STR_LEN) :: filename
@@ -474,7 +496,7 @@ module read_write
 
       open(unit=INPUT_FILE_UNIT, file=filename, status='old', action='read', iostat=iostatus, iomsg=iomessage)
       if (iostatus /= 0) then
-        print '(A,/,A)', 'read_input_file: ERROR:', trim(iomessage) 
+        print '(A,/,A)', 'kettera: ERROR:', trim(iomessage) 
         exit_code = FILE_ERROR
         return
       end if 
@@ -494,8 +516,10 @@ module read_write
         read(unit=INPUT_FILE_UNIT, fmt='(A)', iostat=iostatus, iomsg=iomessage) line
 
         if (is_iostat_end(iostatus) .or. is_iostat_eor(iostatus)) then
-          print '(A,1X,I0,A,1X,I0)', 'read_input_file: INFO: EOF or EOR reached on line', line_num, &
-            ', status code:', iostatus
+          if (output_mode == VERBOSE_OUTPUT) then
+            print '(A,1X,I0,A,1X,I0)', 'kettera: INFO: EOF or EOR reached on line', line_num, &
+              ', status code:', iostatus
+          end if
           break = .true.
           cycle
         end if
@@ -517,21 +541,19 @@ module read_write
 
           if ((equals1_id == 0) .or. (equals2_id == 0) .or. (semicolon_id == 0)) then
             print '(A,1X,I0,1X,A,/,A)', &
-              'read_input_file: ERROR: Invalid parameter specification line', line_num, &
+              'kettera: ERROR: Invalid parameter specification line', line_num, &
               'in input file:', line
             exit_code = GIVEN_PARAMETER_ERROR
             return
           end if
 
           point_count_str = strip(line(equals1_id+1:semicolon_id-1)) 
-          print '(A,1X,A)', 'DEBUG:', trim(point_count_str)
           x_max_str = strip(line(equals2_id+1:))
-          print '(A,1X,A)', 'DEBUG:', trim(x_max_str)
 
           read(point_count_str, fmt=*, iostat=iostatus, iomsg=iomessage) point_count_int
           if (iostatus /= 0) then
             print '(A,1X,I0,A,A,A,/,A,1X,A)', &
-              'read_input_file: ERROR: Invalid parameter specification line', &
+              'kettera: ERROR: Invalid parameter specification line', &
               line_num, ': Unreadable value "', trim(point_count_str), '"', 'Message:', trim(iomessage)
             exit_code = GIVEN_PARAMETER_ERROR
             return
@@ -539,21 +561,21 @@ module read_write
           read(x_max_str, fmt=*, iostat=iostatus, iomsg=iomessage) x_max_float
           if (iostatus /= 0) then
             print '(A,1X,I0,A,A,A,/,A,1X,A)', &
-              'read_input_file: ERROR: Invalid parameter specification line', &
+              'kettera: ERROR: Invalid parameter specification line', &
               line_num, ': Unreadable value "', trim(x_max_str), '"', 'Message:', trim(iomessage)
             exit_code = GIVEN_PARAMETER_ERROR
             return
           end if
   
           if (point_count_int /= params%point_count) then
-            print '(A,1X,I0,1X,A,1X,I0)', 'read_input_file: ERROR: Input file PointCount', &
+            print '(A,1X,I0,1X,A,1X,I0)', 'kettera: ERROR: Input file PointCount', &
               point_count_int, 'is different from parameter PointCount', params%point_count
             exit_code = GIVEN_PARAMETER_ERROR
             return
           end if
 
           if (abs(x_max_float - params%x_max) >= EPS) then
-            print '(A,1X,F6.2,1X,A,1X,F6.2)', 'read_input_file: ERROR: Input file XMax', &
+            print '(A,1X,F6.2,1X,A,1X,F6.2)', 'kettera: ERROR: Input file XMax', &
               x_max_float, 'is different from parameter XMax', params%x_max
             exit_code = GIVEN_PARAMETER_ERROR
             return
@@ -567,7 +589,7 @@ module read_write
 
         if (semicolon_id == 0) then
           print '(A,1X,I0,1X,A,/,A)', &
-            'read_input_file: ERROR: Invalid data line', line_num, &
+            'kettera: ERROR: Invalid data line', line_num, &
             'in input file:', line
           exit_code = GIVEN_PARAMETER_ERROR
           return
@@ -580,7 +602,7 @@ module read_write
         read(real_str, fmt=*, iostat=iostatus, iomsg=iomessage) real_holder
         if (iostatus /= 0) then
           print '(A,1X,I0,A,A,A,/,A,1X,A)', &
-            'read_input_file: ERROR: Invalid data line', &
+            'kettera: ERROR: Invalid data line', &
             line_num, ': Unreadable value "', trim(real_str), '"', 'Message:', trim(iomessage)
           exit_code = GIVEN_PARAMETER_ERROR
           return
@@ -588,7 +610,7 @@ module read_write
         read(imag_str, fmt=*, iostat=iostatus, iomsg=iomessage) imag_holder
         if (iostatus /= 0) then
           print '(A,1X,I0,A,A,A,/,A,1X,A)', &
-            'read_input_file: ERROR: Invalid parameter specification line', &
+            'kettera: ERROR: Invalid parameter specification line', &
             line_num, ': Unreadable value "', trim(imag_str), '"', 'Message:', trim(iomessage)
           exit_code = GIVEN_PARAMETER_ERROR
           return
@@ -598,7 +620,7 @@ module read_write
           wavefunction(array_index) = cmplx(real_holder, imag_holder, kind=r64)
           array_index = array_index + 1
         else
-          print '(A)', 'read_input_line: ERROR: Input file contains more data that can fit inside allocated space!'
+          print '(A)', 'kettera: ERROR: Input file contains more data that can fit inside allocated space!'
           exit_code = GIVEN_PARAMETER_ERROR
           return
         end if
@@ -647,7 +669,7 @@ module read_write
       open(unit=OUTPUT_FILE_UNIT, file=filename, status='replace', action='write', iostat=iostatus, iomsg=iomessage)
 
       if (iostatus /= 0) then
-        print '(a,a,a,/,a,a)', 'init_output_file: ERROR: Could not open file "', filename, '"', 'Message: ', trim(iomessage) 
+        print '(a,a,a,/,a,a)', 'kettera: ERROR: Could not open file "', filename, '"', 'Message: ', trim(iomessage) 
         exit_code = FILE_ERROR
         return
       end if 
@@ -691,7 +713,7 @@ module read_write
         open(unit=OUTPUT_FILE_UNIT, file=filename, status='old', action='write', position='append', iostat=iostatus, iomsg=iomessage)
 
         if (iostatus /= 0) then
-          print '(a,a,a,/,a,a)', 'write_output_file: ERROR: Could not open file "', filename, '"', 'Message: ', trim(iomessage) 
+          print '(a,a,a,/,a,a)', 'kettera: ERROR: Could not open file "', filename, '"', 'Message: ', trim(iomessage) 
           exit_code = FILE_ERROR
           return
         end if 
@@ -717,23 +739,23 @@ module read_write
        close(OUTPUT_FILE_UNIT)
     end subroutine close_output_file
 
-    subroutine write_log_file(params, log_arrays, exit_code)
+    subroutine write_log_file(params, log_arrays, fin_results, exit_code)
       ! Opens the log file, writes the relevant data to it and closes the file.
       ! This function is only called once at the end of every simulation
       implicit none
 
       type(SimulationParams), intent(in) :: params
       type(LoggingArrays), intent(in) :: log_arrays
+      type(FinalResults), intent(in) :: fin_results
       integer(excode), intent(out) :: exit_code
 
       character(len=MAX_STR_LEN) :: iomessage
       integer(i32) :: iostatus
       character(len=MAX_STR_LEN) :: filename
-      integer(i32) :: framecount, i
+      integer(i32) :: i
       integer(label) :: imag
 
       filename = trim(params%log_file)
-      framecount = params%frame_count
       if (params%imag_time) then
         imag = 1
       else
@@ -744,7 +766,7 @@ module read_write
       open(unit=LOG_FILE_UNIT, file=filename, status='replace', action='write', iostat=iostatus, iomsg=iomessage)
 
       if (iostatus /= 0) then
-        print '(A,A,A,/,A,A)', 'write_log_file: ERROR: Could not open file "', filename, '"', 'Message: ', trim(iomessage) 
+        print '(A,A,A,/,A,A)', 'kettera: ERROR: Could not open file "', filename, '"', 'Message: ', trim(iomessage) 
         exit_code = FILE_ERROR
         return
       end if 
@@ -763,7 +785,7 @@ module read_write
       write(LOG_FILE_UNIT, fmt='(A,1X,L,/)') '# unit bounds:   ', params%unit_bounds
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')   '# time steps:', params%step_count
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')   '# interval:  ', params%write_interval
-      write(LOG_FILE_UNIT, fmt='(A,1X,I0,/)') '# frames:    ', framecount
+      write(LOG_FILE_UNIT, fmt='(A,1X,I0,/)') '# frames:    ', params%frame_count
       write(LOG_FILE_UNIT, fmt='(A,1X,F8.6)') '# delta t:   ', params%delta_t
       write(LOG_FILE_UNIT, fmt='(A,1X,I0)')       '# points:    ', params%point_count
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)')    '# x max:     ', params%x_max
@@ -784,11 +806,32 @@ module read_write
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)') '# potential width:   ', params%pot_width
       write(LOG_FILE_UNIT, fmt='(A,1X,F10.6)') '# potential strength:', params%pot_strength
       write(LOG_FILE_UNIT, fmt='(A)') trim(LOG_RESULTS_TITLE)
-      write(LOG_FILE_UNIT, fmt='(A)') '# TBD' ! TODO: cpu time etc
+      if (params%imag_time) then
+        write(LOG_FILE_UNIT, fmt='(A)') &
+          '# NOTE: imaginary time was used so change in energy is due to exponential decay'
+        write(LOG_FILE_UNIT, fmt='(A)') &
+          '# and change in norm squared is negligible due to constant normalization during the iteration'
+      else
+        write(LOG_FILE_UNIT, fmt='(A)') '# NOTE: change in energy/norm squared is due to numerical error'
+      end if
+      write(LOG_FILE_UNIT, fmt='(A,1X,F11.6,1X,A)') '# loop time elapsed:     ', &
+        fin_results%loop_time_elapsed, '(seconds)'
+      write(LOG_FILE_UNIT, fmt='(A,1X,F20.15,1X,A)')    '# initial energy:        ', &
+        fin_results%initial_energy, '(hbar=1 units)'
+      write(LOG_FILE_UNIT, fmt='(A,1X,F20.15,1X,A)')    '# final energy:          ', &
+        fin_results%final_energy, '(hbar=1 units)'
+      write(LOG_FILE_UNIT, fmt='(A,1X,F20.15,1X,A)')    '# change in energy:      ', &
+        fin_results%delta_energy, '(hbar=1 units)'
+      write(LOG_FILE_UNIT, fmt='(A,1X,F20.15,1X,A)')    '# initial norm squared:  ', &
+        fin_results%initial_norm_squared, '(unitless)'
+      write(LOG_FILE_UNIT, fmt='(A,1X,F20.15,1X,A)')    '# final norm squared:    ', &
+        fin_results%final_norm_squared, '(unitless)'
+      write(LOG_FILE_UNIT, fmt='(A,1X,F20.15,1X,A)')    '# change in norm squared:', &
+        fin_results%delta_norm_squared, '(unitless)'
       write(LOG_FILE_UNIT, fmt='(A)') trim(LOG_QUANTITIES_TITLE)
-      write(LOG_FILE_UNIT, fmt=LOG_HEADER_FMT) framecount, params%iter_method, params%pot_type, imag
+      write(LOG_FILE_UNIT, fmt=LOG_HEADER_FMT) params%frame_count, params%iter_method, params%pot_type, imag
       write(LOG_FILE_UNIT, fmt='(A)') trim(LOG_DATA_FIELDS)
-      do i = 1, framecount
+      do i = 1, params%frame_count
         write(LOG_FILE_UNIT, fmt=LOG_DATA_FMT) log_arrays%timestamps(i), log_arrays%energies(i), log_arrays%squared_norms(i)
       end do 
 
@@ -797,6 +840,7 @@ module read_write
       exit_code = SUCCESS
       return
     end subroutine write_log_file
+
     
 
 end module read_write

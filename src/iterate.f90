@@ -17,6 +17,7 @@ module iterate
 
   use kinds
   use exit_codes
+  use io_parameters, only: QUIET_OUTPUT
   use sim_parameters, only: SimulationParams, CrankNicolsonArrays, SplitStepArrays, &
     OutputArrays, LoggingArrays 
   use read_write
@@ -31,13 +32,16 @@ module iterate
   
     ! Crank - Nicolson method iteration
 
-    subroutine iter_cn_method(params, cn_arrays, out_arrays, log_arrays, exit_code)
+    subroutine iter_cn_method(params, cn_arrays, out_arrays, log_arrays, fin_results, &
+        output_mode, exit_code)
       implicit none
       
       type(SimulationParams), intent(in) :: params
       type(CrankNicolsonArrays), intent(inout) :: cn_arrays
       type(OutputArrays), intent(inout) :: out_arrays
       type(LoggingArrays), intent(inout) :: log_arrays
+      type(FinalResults), intent(inout) :: fin_results
+      integer(label), intent(in) :: output_mode
       integer(excode), intent(out) :: exit_code
 
       complex(r64), dimension(params%point_count) :: sub, main, sup
@@ -48,6 +52,8 @@ module iterate
       integer(excode) :: return_status
 
       integer(i32) :: t, frame
+
+      real(r64) :: cputime_start, cputime_end
 
       N = params%point_count
       steps = params%step_count
@@ -64,9 +70,12 @@ module iterate
       call vectorize_tridiagonal_matrix(params, cn_arrays%backward_op, sub, main, sup)
 
       print '(A)', '----- BEGIN CRANK - NICOLSON METHOD ITERATION -----'
-      print '(A8,1X,A20,1X,A20)', 'TimeStep', 'Energy', 'NormSquared'
+      if (output_mode /= QUIET_OUTPUT) then
+        print '(A8,1X,A20,1X,A20)', 'TimeStep', 'Energy', 'NormSquared'
+      end if
 
       frame = 0
+      call cpu_time(cputime_start)
       do t = 0, steps
         
         if (modulo(t, interval) == 0) then
@@ -74,7 +83,9 @@ module iterate
 
           call calculate_logging_quantities(frame+1, t, cn_arrays%wavefunction, cn_arrays%hamiltonian, log_arrays)
 
-          print '(I8,1X,F20.15,1X,F20.15)', t, log_arrays%energies(frame+1), log_arrays%squared_norms(frame+1)
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(I8,1X,F20.15,1X,F20.15)', t, log_arrays%energies(frame+1), log_arrays%squared_norms(frame+1)
+          end if
           call write_output_file(params, frame, out_arrays, cn_arrays%x_space, cn_arrays%potential, return_status) 
           if (return_status /= SUCCESS) then
             exit_code = return_status
@@ -103,12 +114,15 @@ module iterate
         end if
 
       end do
+      call cpu_time(cputime_end)
 
       print '(a)', '----- END CRANK - NICOLSON METHOD ITERATION -----'
 
       call close_output_file()
 
-      call write_log_file(params, log_arrays, return_status)
+      call calculate_result_quantities(params%frame_count, log_arrays, cputime_start, cputime_end, fin_results)
+
+      call write_log_file(params, log_arrays, fin_results, return_status)
       if (return_status /= SUCCESS) then
         exit_code = return_status
         return
@@ -120,11 +134,12 @@ module iterate
 
     ! Split operator method iteration
 
-    subroutine iter_ss_method(params, arrays, exit_code)
+    subroutine iter_ss_method(params, arrays, output_mode, exit_code)
       implicit none
       
       type(SimulationParams), intent(in) :: params
       type(SplitStepArrays), intent(inout) :: arrays
+      integer(label), intent(in) :: output_mode
       integer(excode), intent(out) :: exit_code
 
       complex(C_DOUBLE_COMPLEX), pointer, dimension(:) :: ft_input, ft_output
@@ -156,14 +171,18 @@ module iterate
       call get_dft_plans(int(N, C_INT), ft_input, ft_output, forward_plan, backward_plan)
 
       print '(a)', '----- BEGIN SPLIT STEP METHOD ITERATION -----'
-      print '(a)', 'TimeStep Energy               NormSquared'
+      if (output_mode /= QUIET_OUTPUT) then
+        print '(a)', 'TimeStep Energy               NormSquared'
+      end if
 
       frame = 0
       do t = 0, steps
         
         if (modulo(t, interval) == 0) then
 
-          print '(I8,1X,F20.15,1X,F17.15)', t, energy, norm_squared
+          if (output_mode /= QUIET_OUTPUT) then
+            print '(I8,1X,F20.15,1X,F17.15)', t, energy, norm_squared
+          end if
           if (return_status /= SUCCESS) then
             call destroy_dft_plans(forward_plan, backward_plan)
             call free_holders(input_holder, output_holder)      
