@@ -72,11 +72,14 @@ module user_io
 
     subroutine show_version
       implicit none
+
+      integer(label), parameter :: KETTERA_MAJOR = 0
+      integer(label), parameter :: KETTERA_MINOR = 9
+      integer(label), parameter :: KETTERA_PATCH = 0
       
-      print '(A)', 'kettera v0.5.0'
+      print '(A,I0,".",I0,".",I0)', 'kettera v', KETTERA_MAJOR, KETTERA_MINOR, KETTERA_PATCH
       print '(A)', 'Copyright (C) 2026 Juuso Kaarela'
-      print '(/,A)', 'Kettera is a numerical solver and visualizer for'
-      print '(A)',   'the time-dependent Schrödinger equation'
+      print '(/,A)', 'Kettera is a numerical solver and visualizer for the time-dependent Schrödinger equation'
       print '(A)', 'License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>'
       print '(A)', 'This is free software: you are free to change and redistribute it'
       print '(A)', 'There is NO WARRANTY, to the extent permitted by the law'

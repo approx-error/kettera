@@ -49,7 +49,6 @@ program main
 
   call cpu_time(time_start)
 
-  print '(A)', '----- BEGIN KETTERA -----'
 
   call init_params(SimParams)
 
@@ -58,6 +57,8 @@ program main
   if (stop_after .or. (exit_code /= SUCCESS .and. exit_code /= USER_INPUT_WARNING)) then
     stop int(exit_code, i32) !, quiet=.true.
   end if
+
+  print '(A)', '----- BEGIN KETTERA -----'
 
   call read_param_file(SimParams, output_mode, exit_code)
   if (exit_code /= SUCCESS) then

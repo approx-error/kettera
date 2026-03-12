@@ -62,6 +62,7 @@ module sim_parameters
     integer(label) :: ABSOLUTE_VALUE = 8_label
     integer(label) :: LOGARITHMIC = 9_label
     integer(label) :: HYPERBOLIC_COSINE = 10_label
+    integer(label) :: MORSE = 11_label
   end type PotentialType
 
   ! Defining instances of the PotentialType and WavefunctionType derived types.

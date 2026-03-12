@@ -107,6 +107,8 @@ module read_write
           pot_label = PotType%LOGARITHMIC
         case (PARAM_COSH)
           pot_label = PotType%HYPERBOLIC_COSINE
+        case (PARAM_MORSE)
+          pot_label = PotType%MORSE
         case default
           pot_label = PotType%INVALID
       end select

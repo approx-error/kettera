@@ -307,6 +307,8 @@ module initialize
       real(r64) :: potential(params%point_count)
 
       real(r64) :: m, q, off, w, s, half_w
+      real(r64) :: morse_a
+      real(r64), dimension(params%point_count) :: morse_1, morse_2
       integer(label) :: pot
 
       m = params%mass
@@ -315,7 +317,6 @@ module initialize
       w = params%pot_width
       s = params%pot_strength
       pot = params%pot_type
-
       half_w = w / 2.0_r64
 
       if (pot == PotType%ZERO) then
@@ -382,6 +383,14 @@ module initialize
       else if (pot == PotType%HYPERBOLIC_COSINE) then
 
         potential = q * s * cosh(x_space - off) / w
+
+      else if (pot == PotType%MORSE) then
+
+        morse_a = sqrt(q * s / (2 * w))
+        morse_1 = exp(-morse_a * (x_space - off))
+        morse_2 = morse_1 ** 2
+
+        potential = 0.5_r64 * w * (morse_2 - 2.0_r64 * morse_1)
 
       else
 

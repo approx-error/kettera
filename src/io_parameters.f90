@@ -130,6 +130,7 @@ module io_parameters
   character(*), parameter, public :: PARAM_ABS = 'abs'
   character(*), parameter, public :: PARAM_LOG = 'log'
   character(*), parameter, public :: PARAM_COSH = 'cosh'
+  character(*), parameter, public :: PARAM_MORSE = 'morse'
 
   ! ----- Input file definitions -----
   !character(*), parameter, public :: INPUT_POINT_COUNT = 'PointCount'
