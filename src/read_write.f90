@@ -560,6 +560,7 @@ module read_write
             exit_code = GIVEN_PARAMETER_ERROR
             return
           end if
+
           read(x_max_str, fmt=*, iostat=iostatus, iomsg=iomessage) x_max_float
           if (iostatus /= 0) then
             print '(A,1X,I0,A,A,A,/,A,1X,A)', &

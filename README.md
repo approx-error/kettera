@@ -39,7 +39,7 @@ a .gif or .mov file.
 
 Kettera uses the [FFTW](https://www.fftw.org/) library to calculate Fourier transforms and the python scripts require
 [Numpy](https://numpy.org/) as well as [Matplotlib](https://matplotlib.org/) to function. In addition, 'ketract' contains
-bash-specific syntax meaning that bash is also an implicit requirement.
+bash-specific syntax meaning that bash is also an implicit requirement if you wish to use ketract.
 
 ## Installation
 

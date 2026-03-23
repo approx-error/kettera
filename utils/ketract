@@ -17,30 +17,50 @@
 
 
 show_usage() {
-    echo "Usage: ketract [-f <n>] <in> -o <out>"
-    echo "Extract a single frame <n> from a kettera wavefunction"
-    echo "file <in> into <out>. <out> can then be used as an initial"
-    echo "condition to kettera"
+    echo "Usage: ketract [-f <n1>[,<n2>,<n3>, ...]] -i <in1>[,<in2>,<in3>, ...] -o <out>"
+    echo "Extract a single frames <n1>, <n2>, ... from kettera wavefunction files"
+    echo "<in1>, <in2>, ... into file <out>. <out> can then be used as an initial condition"
+    echo "or an orthogonalization condition in kettera. At least one file must be sepcified"
+    echo "and if frame is not provided, the last frame is extracted from each file by default"
+    echo ""
     echo "Run 'ketract --help' for more information"
 }
 
 show_help() {
-    echo "Usage: ketract [-f <n>] <in> -o <out>"
-    echo "Extract a single frame <n> from a kettera wavefunction"
-    echo "file <in> into <out>. <out> can then be used as an initial"
-    echo "condition to kettera"
+    echo "Usage: ketract [-f <n1>[,<n2>,<n3>, ...]] -i <in1>[,<in2>,<in3>, ...] -o <out>"
+    echo "Extract single frames <n1>, <n2>, ... from kettera wavefunction files <in1>, <in2>, ..."
+    echo "into file <out>. <out> can then be used as an initial condition or an orthogonalization"
+    echo "condition in kettera. At least one input file must be specified and if frame is not provided,"
+    echo "the last frame is extracted from each file by default"
+    echo ""
+    echo "Mandatory options:"
+    echo "  -i, --input <in1>[,<in2>,<in3>, ...]    use <in1> as the input file to be extracted"
+    echo "                                          OR use in <in1>, <in2>, <in3>, etc. as the input files"
+    echo "                                          at least one input file must be specified"
+    echo "                                          the wave filenames cannot contain commas as commas are"
+    echo "                                          used to separate the filenames"
+    echo "                                          EXAMPLE: use w1.out, w2.out and w3.out as"
+    echo "                                          the input files: -i w1.out,w2.out,w3.out"
+    echo ""
+    echo "  -o, --output <out>                      use <out> as the output file"
+    echo "                                          you may only specify one output file"
     echo ""
     echo "Optional options:"
-    echo "  -f <n>, --frame <n>    extract data from frame <n> of the input file"
-    echo "                         default value is -1, which corresponds to the last frame "
-    echo "  --help                 show this help and exit"
-    echo "  --version              show version information and exit"
-    echo "Mandatory options:"
-    echo "  -o <file>, --output <file>    use <file> as the output file"
+    echo "  -f, --frame <n1>[,<n2>,<n3>, ...]    extract data from frame <n1> of the input file"
+    echo "                                       OR extract frame <n1> from input file 1, frame <n2>"
+    echo "                                       from input file 2, frame <n3> from input file 3, etc."
+    echo "                                       the default value is -1, which corresponds to the last frame"
+    echo "                                       and if multiple files are used, the -1 default is applied to"
+    echo "                                       all of them"
+    echo "                                       EXAMPLE: extract the last frames of the first two input files and the"
+    echo "                                       second frame of the third input file: --frame -1,-1,2 "
+    echo ""
+    echo "  --help                               show this help and exit"
+    echo "  --version                            show version information and exit"
 }
 
 show_version() {
-    local VERSION="1.0.0"
+    local VERSION="1.1.0"
     echo "ketract v$VERSION"
     echo "Copyright (C) 2026 Juuso Kaarela"
     echo ""
@@ -51,6 +71,168 @@ show_version() {
     echo "There is NO WARRANTY, to the extent permitted by the law"
 }
 
+determine_input_parameters() {
+    local input="$1" # The input file to check
+
+    local SUCCESS=0
+    local FMT_ERR_1=1
+    local FMT_ERR_2=2
+    local FMT_ERR_3=3
+    local FMT_ERR_4=4
+    local FMT_ERR_5=5
+
+    local integer_re="^[0-9]+$"
+    local float_re="^[0-9]+\.[0-9]+$"
+
+    local point_line xmax_line
+    local awk_pointcount awk_xmax
+    local pointcount xmax
+
+    # Find the line number in the input file where the point count and x max are
+    point_line="$(grep -n "PointCount" "$input" | awk -F":" '{print $1}')"
+    xmax_line="$(grep -n "XMax" "$input" | awk -F":" '{print $1}')"
+
+    if [[ "$point_line" -ne "$xmax_line" ]]; then
+        return "$FMT_ERR_1"
+    fi
+    if [[ -z "$point_line" ]]; then 
+        return "$FMT_ERR_2"
+    fi
+    if [[ "${#point_line}" -gt 2 ]]; then
+        return "$FMT_ERR_3"
+    fi
+
+    awk_pointcount="FNR==$point_line{print\$6}"
+    awk_xmax="FNR==$xmax_line{print\$8}"
+    pointcount="$(awk -F'[=;]' "$awk_pointcount" "$input")" 
+    xmax="$(awk -F'[=;]' "$awk_xmax" "$input")"
+
+    if [[ ! "$pointcount" =~ $integer_re ]]; then
+        return "$FMT_ERR_4"
+    fi
+    if [[ ! "$xmax" =~ $float_re ]]; then
+        return "$FMT_ERR_5"
+    fi
+
+    echo "$pointcount $xmax"
+    return "$SUCCESS"
+}
+
+extract_frame () {
+    local index="$1" # Tells how many frames have already been extracted
+    local expected_point_count="$2" # This value is used to make sure the input
+        # file has the correct value for the PointCount parameter
+    local expected_x_max="$3" # This value is used to make sure the input file
+        # has the correct value for the XMax parameter
+    local input="$4" # The input file to extract from
+    local frame="$5" # The frame to extract from the input file
+    local output="$6" # The output file to extract to
+
+    local SUCCESS=0
+    local OPT_ERROR=1
+    local VAL_ERROR=2
+    local FILE_ERROR=3
+    local FMT_ERROR=4
+    local RANGE_ERROR=5
+    local PARAM_ERROR=6
+
+    local integer_re="^[0-9]+$"
+    local float_re="^[0-9]+\.[0-9]+$"
+
+    local frame_line point_line xmax_line
+    local awk_framecount awk_pointcount awk_xmax
+    local framecount pointcount xmax
+    local max_frame
+    local grep_frame sed_frame
+    local frame_lower frame_upper frame_last
+
+    # Find the line number in the input file where the frame count, point count and x max are
+    frame_line="$(grep -n "FrameCount" "$input" | awk -F":" '{print $1}')"
+    point_line="$(grep -n "PointCount" "$input" | awk -F":" '{print $1}')"
+    xmax_line="$(grep -n "XMax" "$input" | awk -F":" '{print $1}')"
+
+    if [[ "$frame_line" -ne "$point_line" ]] || [[ "$frame_line" -ne "$xmax_line" ]]; then
+        echo "ketract: FORMAT ERROR: FrameCount, PointCount and XMax are not on same line in '$input'"
+        return "$FMT_ERROR"
+    fi
+    if [[ -z "$frame_line" ]]; then 
+        echo "ketract: FORMAT ERROR: Line containing FrameCount, PointCount and XMax not found in '$input'" 
+        return "$FMT_ERROR";
+    fi
+    if [[ "${#frame_line}" -gt 2 ]]; then
+        echo "ketract: FORMAT ERROR: Multiple instances of FrameCount, PointCount and XMax"
+        echo "or not found in the first 99 lines of '$input'"
+        return "$FMT_ERROR"
+    fi
+
+    awk_framecount="FNR==$frame_line{print\$2}"
+    awk_pointcount="FNR==$point_line{print\$6}"
+    awk_xmax="FNR==$xmax_line{print\$8}"
+    framecount="$(awk -F'[=;]' "$awk_framecount" "$input")" 
+    pointcount="$(awk -F'[=;]' "$awk_pointcount" "$input")" 
+    xmax="$(awk -F'[=;]' "$awk_xmax" "$input")"
+
+    if [[ ! "$framecount" =~ $integer_re ]]; then
+        echo "ketract: FORMAT ERROR: Value of FrameCount on line $frame_line in '$input'"
+        echo "is in wrong place or not a positive integer"
+        return "$FMT_ERROR"
+    fi
+    if [[ ! "$pointcount" =~ $integer_re ]]; then
+        echo "ketract: FORMAT ERROR: Value of PointCount on line $point_line in '$input'"
+        echo "is in wrong place or not a positive integer"
+        return "$FMT_ERROR"
+    fi
+    if [[ ! "$xmax" =~ $float_re ]]; then
+        echo "ketract: FORMAT ERROR: Value of XMax on line $xmax_line in '$input'"
+        echo "is in wrong place or not a positive floating point number"
+        return "$FMT_ERROR"
+    fi
+
+    if [[ "$pointcount" != "$expected_point_count" ]]; then
+        echo "ketract: PARAMETER ERROR: Value '$pointcount' for PointCount in file '$input'"
+        echo "does not match the expected PointCount value '$expected_point_count'!"
+        return "$PARAM_ERROR"
+    fi
+
+    if [[ "$xmax" != "$expected_x_max" ]]; then
+        echo "ketract: PARAMETER ERROR: Value '$xmax' for XMax in file '$input'"
+        echo "does not match the expected XMax value '$expected_x_max'!"
+        return "$PARAM_ERROR"
+    fi
+
+    max_frame=$(("$framecount" - 1))
+
+    if [[ "$frame" -gt "$max_frame" ]]; then
+        echo "ketract: RANGE ERROR: Chosen frame '$frame' is outside the range of frames in '$input'"
+        return "$RANGE_ERROR"
+    fi
+
+    if [[ "$frame" -eq -1 ]]; then
+        frame="$max_frame"
+    fi
+
+    grep_frame="^Frame=$frame$" # The ^ and $ are there to for example stop Frame=10 from matching Frame=1
+
+    frame_line="$(grep -n "$grep_frame" "$input" | awk -F":" '{print$1}')"
+
+    if [[ -z "$frame_line" ]]; then 
+        echo "ketract: FORMAT ERROR: Could not find frame '$frame' in '$input'" 
+        return "$FMT_ERROR";
+    fi
+
+    frame_lower=$(("$frame_line" + 1))
+    frame_upper=$(("$frame_line" + "$pointcount"))
+    frame_last=$(("$frame_upper" + 1))
+
+    sed_frame="${frame_lower},${frame_upper}p;${frame_last}q"
+
+
+    echo "Wave=$index" >> "$output"
+    echo "$(sed -n "$sed_frame" "$input" | cut -d';' -f2,3)" >> "$output"
+
+    return "$SUCCESS"
+}
+
 main() {
     
     local SUCCESS=0
@@ -59,14 +241,17 @@ main() {
     local FILE_ERROR=3
     local FMT_ERROR=4
     local RANGE_ERROR=5
+    local PARAM_ERROR=6
 
     local frame_re="^[-]?[0-9]+$"
-    local integer_re="^[0-9]+$"
-    local float_re="^[0-9]+\.[0-9]+$"
 
     local current
-    local frame=-1
-    local input output
+    local frames=()
+    local default_frame=-1
+    local frame_count=0
+    local input_files=()
+    local input_count=0
+    local output
 
     if [[ "$#" -eq 0 ]]; then
         show_usage
@@ -84,6 +269,25 @@ main() {
                 show_version
                 exit "$SUCCESS";
                 ;;
+            "-i"|"--input")
+                shift
+                if [[ "$#" -eq 0 ]]; then
+                    echo "ketract: OPTION ERROR: No input file(s) provided for flag -i!"
+                    exit "$OPT_ERROR";
+                fi
+                echo "$1"
+
+                for i in ${1//,/ }; do # Iterating through each comma separated string in the current $1
+                    echo "$i"
+
+                    if [[ ! -f "$i" ]]; then
+                        echo "ketract: FILE ERROR: File '$i' does not exist!"
+                        exit "$FILE_ERROR";
+                    fi
+
+                    input_files+=("$i")
+                done
+                ;;
             "-o"|"--output")
                 shift
                 if [[ "$#" -eq 0 ]]; then
@@ -95,116 +299,114 @@ main() {
             "-f"|"--frame")
                 shift
                 if [[ "$#" -eq 0 ]]; then
-                    echo "ketract: OPTION ERROR: No frame number provided for flag -f!"
+                    echo "ketract: OPTION ERROR: No frame number(s) provided for flag -f!"
                     exit "$OPT_ERROR";
                 fi
-                if [[ ! "$1" =~ $frame_re ]]; then
-                    echo "ketract: VALUE ERROR: Frame must be a number!"
-                    exit "$VAL_ERROR";
-                fi
-                if [[ "$1" -lt -1 ]]; then
-                    echo "ketract: VALUE ERROR: Frame number must be >= -1: "
-                    exit "$VAL_ERROR";
-                fi
-                frame="$1"
+                
+                for i in ${1//,/ }; do # Iterating through each comma separated string in the current $1
+                    echo "$i"
+                    if [[ ! "$i" =~ $frame_re ]]; then
+                        echo "ketract: VALUE ERROR: '$i' is not an integer and cannot be used as a frame!"
+                        exit "$VAL_ERROR";
+                    fi
+
+                    if [[ "$i" -lt -1 ]]; then
+                        echo "ketract: VALUE ERROR: Frame number must be >= -1 and '$i' is too small!"
+                        exit "$VAL_ERROR";
+                    fi
+
+                    frames+=("$i")
+                done 
                 ;;
             *)
-                if [[ -f "$1" ]]; then
-                    input="$1"
-                else
-                    echo "ketract: FILE ERROR: File '$1' does not exist!"
-                    exit "$FILE_ERROR";
-                fi
+                echo "ketract: OPTION ERROR: Option '$1' is not recognized!"
+                echo "Run 'ketract --help' for more information"
+                exit "$OPT_ERROR"
                 ;;
         esac
         shift
     done
-    
-    if [[ -z "$input" ]]; then
-        echo "ketract: OPTION ERROR: No input file provided!"
+
+    if [[ -z "$output" ]]; then
+        echo "ketract: OPTION ERROR: No output file provided!"
         exit "$OPT_ERROR"
     fi
 
-    local frame_line point_line xmax_line
-    local awk_framecount awk_pointcount awk_xmax
-    local framecount pointcount xmax
-    local max_frame
-    local grep_frame sed_frame
-    local frame_lower frame_upper frame_last
+    echo "DEBUG: input_file(s): ${input_files[*]}"
+    echo "DEBUG: amount of input files: ${#input_files[@]}"
+    echo "DEBUG: frame(s): ${frames[*]}"
+    echo "DEBUG: amount of frames: ${#frames[@]}"
 
-    # Find the line number in the input file where the frame count, point count and x max are
-    frame_line="$(grep -n "FrameCount" "$input" | awk -F":" '{print $1}')"
-    point_line="$(grep -n "PointCount" "$input" | awk -F":" '{print $1}')"
-    xmax_line="$(grep -n "XMax" "$input" | awk -F":" '{print $1}')"
+    input_count="${#input_files[@]}"
+    frame_count="${#frames[@]}"
 
-    if [[ "$frame_line" -ne "$point_line" ]] || [[ "$frame_line" -ne "$xmax_line" ]]; then
-        echo "ketract: FORMAT ERROR: FrameCount, PointCount and XMax are not on same line in '$input'"
-        exit "$FMT_ERROR"
+    if (( "$input_count" == 0 )); then
+        echo "ketract: OPTION ERROR: No input files provided!"
+        exit "$OPT_ERROR";
     fi
-    if [[ -z "$frame_line" ]]; then 
-        echo "ketract: FORMAT ERROR: Line containing FrameCount, PointCount and XMax not found in '$input'" 
-        exit "$FMT_ERROR";
-    fi
-    if [[ "${#frame_line}" -gt 2 ]]; then
-        echo "ketract: FORMAT ERROR: Multiple instances of FrameCount, PointCount and XMax"
-        echo "or not found in the first 99 lines of '$input'"
-        exit "$FMT_ERROR"
+    
+    if (( "$frame_count" == 0 )); then
+        for (( i = 0 ; i <= $(("$input_count" - 1)) ; i++ )); do
+            frames["$i"]=-1
+        done
+    elif (( "$frame_count" != "$input_count" )); then
+        echo "ketract: VALUE ERROR: Number of frames provided does not match number of input files provided!"
+        exit "$VAL_ERROR";
     fi
 
-    awk_framecount="FNR==$frame_line{print\$2}"
-    awk_pointcount="FNR==$point_line{print\$6}"
-    awk_xmax="FNR==$xmax_line{print\$8}"
-    framecount="$(awk -F'[=;]' "$awk_framecount" "$input")" 
-    pointcount="$(awk -F'[=;]' "$awk_pointcount" "$input")" 
-    xmax="$(awk -F'[=;]' "$awk_xmax" "$input")"
+    echo "DEBUG: frame(s) after: ${frames[*]}"
+    echo "DEBUG: amount of frames after: ${#frames[@]}"
 
-    if [[ ! "$framecount" =~ $integer_re ]]; then
-        echo "ketract: FORMAT ERROR: Value of FrameCount on line $frame_line in '$input'"
-        echo "is in wrong place or not a positive integer"
-        exit "$FMT_ERROR"
-    fi
-    if [[ ! "$pointcount" =~ $integer_re ]]; then
-        echo "ketract: FORMAT ERROR: Value of PointCount on line $point_line in '$input'"
-        echo "is in wrong place or not a positive integer"
-        exit "$FMT_ERROR"
-    fi
-    if [[ ! "$xmax" =~ $float_re ]]; then
-        echo "ketract: FORMAT ERROR: Value of XMax on line $xmax_line in '$input'"
-        echo "is in wrong place or not a positive floating point number"
-        exit "$FMT_ERROR"
-    fi
+    local first_input=${input_files[0]}
+    local stat expected_point_count expected_x_max
+    read -r expected_point_count expected_x_max < <(determine_input_parameters "$first_input")
+    stat="$?"
 
-    max_frame=$(("$framecount" - 1))
+    case $stat in
+        0)
+            echo "status 0"
+            ;;
+        1)
+            echo "ketract: FORMAT ERROR: FrameCount, PointCount and XMax are not on same line in '$first_input'"
+            exit "$FMT_ERROR"
+            ;;
+        2)
+            echo "ketract: FORMAT ERROR: Line containing PointCount and XMax not found in '$first_input'" 
+            exit "$FMT_ERROR"
+            ;;
+        3)
+            echo "ketract: FORMAT ERROR: Multiple instances of PointCount and XMax"
+            echo "or not found in the first 99 lines of '$input'"
+            exit "$FMT_ERROR"
+            ;;
+        4)
+            echo "ketract: FORMAT ERROR: Value of PointCount on line $point_line in '$input'"
+            echo "is in wrong place or not a positive integer"
+            exit "$FMT_ERROR"
+            ;;
+        5)
+            echo "ketract: FORMAT ERROR: Value of XMax on line $xmax_line in '$input'"
+            echo "is in wrong place or not a positive floating point number"
+            exit "$FMR_ERROR"
+            ;;
+        *)
+            echo "ketract: determine_input_parameters status not 0-5"
+            ;;
+    esac
 
-    if [[ "$frame" -gt "$max_frame" ]]; then
-        echo "ketract: RANGE ERROR: Chosen frame is outside the range of frames in '$input'"
-        exit "$RANGE_ERROR"
-    fi
-
-    if [[ "$frame" -eq -1 ]]; then
-        frame="$max_frame"
-    fi
-
-    grep_frame="Frame=$frame"
-
-    frame_line="$(grep -n "$grep_frame" "$input" | awk -F":" '{print$1}')"
-
-    if [[ -z "$frame_line" ]]; then 
-        echo "ketract: FORMAT ERROR: Could not find frame $frame in '$input'" 
-        exit "$FMT_ERROR";
-    fi
-
-    frame_lower=$(("$frame_line" + 1))
-    frame_upper=$(("$frame_line" + "$pointcount"))
-    frame_last=$(("$frame_upper" + 1))
-
-    sed_frame=""$frame_lower","$frame_upper"p;"$frame_last"q"
-
-    echo "# This file was generated by ketract and contains a wavefunction" > "$output"
-    echo "# that can be used as an initial condition for simulations in kettera" >> "$output"
-    echo "PointCount=$pointcount;XMax=$xmax" >> "$output"
+    echo "# This file was generated by ketract and contains a wavefunction / wavefunctions" > "$output"
+    echo "# that can be used as an initial condition / initial conditions for simulations in kettera" >> "$output"
+    echo "WaveCount=$input_count;PointCount=$expected_point_count;XMax=$expected_x_max" >> "$output"
     echo "Real;Imag" >> "$output"
-    echo "$(sed -n "$sed_frame" "$input" | cut -d';' -f2,3)" >> "$output"
+
+    for (( i = 0 ; i <= $(("$input_count" - 1)) ; i++ )); do
+        extract_frame "$i" "$expected_point_count" "$expected_x_max" "${input_files[$i]}" "${frames[$i]}" "$output"
+        stat="$?"
+        if (( "$stat" != "$SUCCESS" )); then
+            rm -f "$output"
+            exit "$stat"
+        fi
+    done
 
     exit "$SUCCESS";
 }
