@@ -77,6 +77,10 @@ module io_parameters
   integer(label), parameter, public :: BOOL_TYPE = 120_label
   integer(label), parameter, public :: STR_TYPE = 130_label
 
+  ! Variables for parameter bounds
+  integer(i32), parameter, public :: ZERO_INT = 0_i32
+  real(r64), parameter, public :: ZERO_FLOAT = 0.0_r64
+
   ! User given parameter names
   character(*), parameter, public :: PARAM_METHOD = 'Method'
   character(*), parameter, public :: PARAM_IMAG_TIME = 'ImagTime'

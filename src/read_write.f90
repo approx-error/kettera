@@ -299,12 +299,18 @@ module read_write
             if (given_type /= INT_TYPE) then
               invalid_type = .true.
               exit name_select
+            else if (int_holder <= ZERO_INT) then
+              invalid_value = .true.
+              exit name_select
             else
               params%step_count = int_holder
             end if
           case (PARAM_WRITE_INTERVAL)
             if (given_type /= INT_TYPE) then
               invalid_type = .true.
+              exit name_select
+            else if (int_holder <= ZERO_INT) then
+              invalid_value = .true.
               exit name_select
             else
               params%write_interval = int_holder
@@ -313,6 +319,9 @@ module read_write
             if (given_type /= FLOAT_TYPE) then
               invalid_type = .true.
               exit name_select
+            else if (float_holder <= ZERO_FLOAT) then
+              invalid_value = .true.
+              exit name_select
             else
               params%delta_t = float_holder
             end if
@@ -320,12 +329,18 @@ module read_write
             if (given_type /= INT_TYPE) then
               invalid_type = .true.
               exit name_select
+            else if (int_holder <= ZERO_INT) then
+              invalid_value = .true.
+              exit name_select
             else
               params%point_count = int_holder
             end if
           case (PARAM_X_MAX)
             if (given_type /= FLOAT_TYPE) then
               invalid_type = .true.
+              exit name_select
+            else if (float_holder <= ZERO_FLOAT) then
+              invalid_value = .true.
               exit name_select
             else
               params%x_max = float_holder
@@ -344,6 +359,9 @@ module read_write
           case (PARAM_MASS)
             if (given_type /= FLOAT_TYPE) then
               invalid_type = .true.
+              exit name_select
+            else if (float_holder <= ZERO_FLOAT) then
+              invalid_value = .true.
               exit name_select
             else
               params%mass = float_holder
@@ -373,6 +391,9 @@ module read_write
             if (given_type /= FLOAT_TYPE) then
               invalid_type = .true.
               exit name_select
+            else if (float_holder <= ZERO_FLOAT) then
+              invalid_value = .true.
+              exit name_select
             else
               params%wave_width = float_holder
             end if
@@ -397,6 +418,9 @@ module read_write
           case (PARAM_POT_WIDTH)
             if (given_type /= FLOAT_TYPE) then
               invalid_type = .true.
+              exit name_select
+            else if (float_holder <= ZERO_FLOAT) then
+              invalid_value = .true.
               exit name_select
             else
               params%pot_width = float_holder
